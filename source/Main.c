@@ -9,7 +9,7 @@
 #include "Gui.h"
 #include "FileHandling.h"
 #include "EmuFont.h"
-#include "WonderSwan.h"
+#include "Supervision.h"
 #include "Cart.h"
 #include "cpu.h"
 #include "Gfx.h"
@@ -60,12 +60,8 @@ int main(int argc, char **argv) {
 	if (argc > 1) {
 		enableExit = true;
 	}
-	// Enabled DS Expansion RAM in GBA port
-	maxRomSize = 0x800000;
-	romSpacePtr = (u8 *)0x9000000;
-	*((u16 *)0x8240000) = 1;
-//	maxRomSize = 0x800000 + 0x1000;
-//	romSpacePtr = malloc(maxRomSize);
+	maxRomSize = 0x800000 + 0x1000;
+	romSpacePtr = malloc(maxRomSize);
 	if (romSpacePtr == NULL) {
 		maxRomSize = 0x200000 + 0x1000;
 		romSpacePtr = malloc(maxRomSize);
@@ -83,8 +79,6 @@ int main(int argc, char **argv) {
 		loadSettings();
 		loadBnWBIOS();
 		loadColorBIOS();
-		loadCrystalBIOS();
-		loadIntEeproms();
 		if (argc > 1) {
 			loadGame(argv[1]);
 			setMuteSoundGUI();

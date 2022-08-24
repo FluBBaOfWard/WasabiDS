@@ -16,12 +16,29 @@
 		9C175BE028B6326C00293DA7 /* 65c02s.s */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = 65c02s.s; sourceTree = "<group>"; };
 		9C175BE128B6326C00293DA7 /* 65c02s.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = 65c02s.h; sourceTree = "<group>"; };
 		9C175BE228B6326C00293DA7 /* 65c02smac.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = 65c02smac.h; sourceTree = "<group>"; };
+		9C175BE428B635EF00293DA7 /* Version.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Version.h; sourceTree = "<group>"; };
+		9C175BE528B635EF00293DA7 /* ARM6502_todo.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = ARM6502_todo.txt; sourceTree = "<group>"; };
+		9C175BE628B635EF00293DA7 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		9C175BE728B635EF00293DA7 /* M6502.s */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = M6502.s; sourceTree = "<group>"; };
+		9C175BE828B635EF00293DA7 /* M6502.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = M6502.h; sourceTree = "<group>"; };
+		9C175BE928B635EF00293DA7 /* M6502.i */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c.preprocessed; path = M6502.i; sourceTree = "<group>"; };
+		9C175BEA28B635EF00293DA7 /* History.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = History.txt; sourceTree = "<group>"; };
+		9C175BEB28B635EF00293DA7 /* M6502mac.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = M6502mac.h; sourceTree = "<group>"; };
+		9C175BEF28B63D1800293DA7 /* Version.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Version.h; sourceTree = "<group>"; };
+		9C175BF028B63D1800293DA7 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		9C175BF128B63D1800293DA7 /* SVVideo_todo.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = SVVideo_todo.txt; sourceTree = "<group>"; };
+		9C175BF228B63D1800293DA7 /* SVVideo.i */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c.preprocessed; path = SVVideo.i; sourceTree = "<group>"; };
+		9C175BF328B63D1800293DA7 /* SVVideo.s */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = SVVideo.s; sourceTree = "<group>"; };
+		9C175BF428B63D1800293DA7 /* SVVideo.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SVVideo.h; sourceTree = "<group>"; };
+		9C175BF528B63D1800293DA7 /* History.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = History.txt; sourceTree = "<group>"; };
+		9C175BF628B64ABE00293DA7 /* SuperVisionTech.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = SuperVisionTech.txt; sourceTree = "<group>"; };
+		9C175BF728B65D3D00293DA7 /* Supervision_Tech.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = Supervision_Tech.txt; sourceTree = "<group>"; wrapsLines = 1; };
+		9C175BF928B65D7F00293DA7 /* EQU_WATARA.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = EQU_WATARA.txt; sourceTree = "<group>"; };
 		9C1FFFA72684A277005851ED /* EmuSettings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EmuSettings.h; sourceTree = "<group>"; };
 		9C42404027E2264A0042454B /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		9C443D79278AE4110029EE11 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		9C4EB1C4271CB16A0072D38E /* SuperVision.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = SuperVision.c; sourceTree = "<group>"; };
 		9C4EB1C5271CB16A0072D38E /* SuperVision.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SuperVision.h; sourceTree = "<group>"; };
-		9C4EB1D8271CBC060072D38E /* WonderSwanTech.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = WonderSwanTech.txt; sourceTree = "<group>"; };
 		9C50820525D45A9A00A8E1BA /* Cart.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Cart.h; sourceTree = "<group>"; };
 		9C50820625D45A9A00A8E1BA /* Sound.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = Sound.s; sourceTree = "<group>"; };
 		9C50820725D45A9A00A8E1BA /* Main.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Main.h; sourceTree = "<group>"; };
@@ -103,6 +120,35 @@
 			path = ARM65C02;
 			sourceTree = "<group>";
 		};
+		9C175BE328B635EF00293DA7 /* ARM6502 */ = {
+			isa = PBXGroup;
+			children = (
+				9C175BE528B635EF00293DA7 /* ARM6502_todo.txt */,
+				9C175BE628B635EF00293DA7 /* README.md */,
+				9C175BEA28B635EF00293DA7 /* History.txt */,
+				9C175BE428B635EF00293DA7 /* Version.h */,
+				9C175BE828B635EF00293DA7 /* M6502.h */,
+				9C175BE928B635EF00293DA7 /* M6502.i */,
+				9C175BEB28B635EF00293DA7 /* M6502mac.h */,
+				9C175BE728B635EF00293DA7 /* M6502.s */,
+			);
+			path = ARM6502;
+			sourceTree = "<group>";
+		};
+		9C175BEE28B63D1800293DA7 /* KS5360 */ = {
+			isa = PBXGroup;
+			children = (
+				9C175BF128B63D1800293DA7 /* SVVideo_todo.txt */,
+				9C175BF028B63D1800293DA7 /* README.md */,
+				9C175BF528B63D1800293DA7 /* History.txt */,
+				9C175BEF28B63D1800293DA7 /* Version.h */,
+				9C175BF428B63D1800293DA7 /* SVVideo.h */,
+				9C175BF228B63D1800293DA7 /* SVVideo.i */,
+				9C175BF328B63D1800293DA7 /* SVVideo.s */,
+			);
+			path = KS5360;
+			sourceTree = "<group>";
+		};
 		9C7BB94925FCD73C00EA9C9C /* graphics */ = {
 			isa = PBXGroup;
 			children = (
@@ -115,7 +161,9 @@
 		A42D0269205FEC6E00515C72 /* Docs */ = {
 			isa = PBXGroup;
 			children = (
-				9C4EB1D8271CBC060072D38E /* WonderSwanTech.txt */,
+				9C175BF928B65D7F00293DA7 /* EQU_WATARA.txt */,
+				9C175BF728B65D3D00293DA7 /* Supervision_Tech.txt */,
+				9C175BF628B64ABE00293DA7 /* SuperVisionTech.txt */,
 			);
 			path = Docs;
 			sourceTree = "<group>";
@@ -143,7 +191,9 @@
 		A48CC0251618E65200465E20 /* source */ = {
 			isa = PBXGroup;
 			children = (
+				9C175BE328B635EF00293DA7 /* ARM6502 */,
 				9C175BDF28B6326C00293DA7 /* ARM65C02 */,
+				9C175BEE28B63D1800293DA7 /* KS5360 */,
 				A47F092A20863AF5004E1DA6 /* Shared */,
 				9CC013FC2668FDD9005714F7 /* Emubase.h */,
 				A49D343A1757E54900BD9B4B /* Equates.h */,

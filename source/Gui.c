@@ -9,21 +9,18 @@
 #include "Gfx.h"
 #include "io.h"
 #include "cpu.h"
-#include "ARMV30MZ/Version.h"
-#include "Sphinx/Version.h"
+#include "ARM6502/Version.h"
+#include "KS5360/Version.h"
 
-#define EMUVERSION "V0.4.2 2022-08-23"
+#define EMUVERSION "V0.4.2 2022-08-24"
 
 #define ALLOW_SPEED_HACKS	(1<<17)
 #define ENABLE_HEADPHONES	(1<<18)
 #define ALLOW_REFRESH_CHG	(1<<19)
 
 static void paletteChange(void);
-static void languageSet(void);
 static void machineSet(void);
-static void batteryChange(void);
 static void speedHackSet(void);
-static void headphonesSet(void);
 static void refreshChgSet(void);
 
 static void uiMachine(void);
@@ -38,9 +35,9 @@ const fptr fnList2[] = {ui4, ui5, ui6, ui7, ui8};
 const fptr fnList3[] = {uiDummy};
 const fptr fnList4[] = {autoBSet, autoASet, controllerSet, swapABSet};
 const fptr fnList5[] = {gammaSet, paletteChange};
-const fptr fnList6[] = {machineSet, selectBnWBios, selectColorBios, selectCrystalBios, selectEEPROM, clearIntEeproms, speedHackSet, batteryChange, headphonesSet /*languageSet*/};
+const fptr fnList6[] = {machineSet, selectBnWBios, selectColorBios, speedHackSet /*languageSet*/};
 const fptr fnList7[] = {speedSet, refreshChgSet, autoStateSet, autoNVRAMSet, autoSettingsSet, autoPauseGameSet, powerSaveSet, screenSwapSet, sleepSet};
-const fptr fnList8[] = {debugTextSet, fgrLayerSet, bgrLayerSet, sprLayerSet, stepFrame};
+const fptr fnList8[] = {debugTextSet, fgrLayerSet, bgrLayerSet, sprLayerSet};
 const fptr fnList9[] = {exitEmulator, backOutOfMenu};
 const fptr fnList10[] = {uiDummy};
 const fptr *const fnListX[] = {fnList0, fnList1, fnList2, fnList3, fnList4, fnList5, fnList6, fnList7, fnList8, fnList9, fnList10};
@@ -61,7 +58,7 @@ const char *const flickTxt[] = {"No Flicker", "Flicker"};
 const char *const bordTxt[]  = {"Black", "Border Color", "None"};
 const char *const palTxt[]   = {"Black & White", "Red", "Green", "Blue", "Classic"};
 const char *const langTxt[]  = {"Japanese", "English"};
-const char *const machTxt[]  = {"Auto", "WonderSwan", "WonderSwan Color", "SwanCrystal", "Pocket Challenge V2"};
+const char *const machTxt[]  = {"Auto", "SuperVision", "SuperVision Color"};
 
 
 void setupGUI() {
@@ -73,7 +70,7 @@ void setupGUI() {
 
 /// This is called when going from emu to ui.
 void enterGUI() {
-	if (updateSettingsFromWS() && (emuSettings & AUTOSAVE_SETTINGS)) {
+	if (updateSettingsFromSV() && (emuSettings & AUTOSAVE_SETTINGS)) {
 		saveSettings();
 		settingsChanged = false;
 	}
@@ -128,9 +125,9 @@ void uiAbout() {
 
 	drawText(gameInfoString, 9, 0);
 
-	drawText(" NitroSwan    " EMUVERSION, 21, 0);
-	drawText(" Sphinx       " SPHINXVERSION, 22, 0);
-	drawText(" ARMV30MZ     " ARMV30MZVERSION, 23, 0);
+	drawText(" WasabiDS    " EMUVERSION, 21, 0);
+	drawText(" SVVideo     " SVVIDEOVERSION, 22, 0);
+	drawText(" ARM6502     " ARM6502VERSION, 23, 0);
 }
 
 void uiController() {
@@ -152,12 +149,7 @@ static void uiMachine() {
 	drawSubItem("Machine: ", machTxt[gMachineSet]);
 	drawSubItem("Select WS Bios -> ", NULL);
 	drawSubItem("Select WS Color Bios -> ", NULL);
-	drawSubItem("Select WS Crystal Bios -> ", NULL);
-	drawSubItem("Import internal EEPROM -> ", NULL);
-	drawSubItem("Clear internal EEPROM ", NULL);
 	drawSubItem("Cpu speed hacks: ", autoTxt[(emuSettings&ALLOW_SPEED_HACKS)>>17]);
-	drawSubItem("Change Battery ", NULL);
-	drawSubItem("Headphones: ", autoTxt[(emuSettings&ENABLE_HEADPHONES)>>18]);
 //	drawSubItem("Language: ", langTxt[gLang]);
 }
 
@@ -180,7 +172,6 @@ void uiDebug() {
 	drawSubItem("Disable Foreground: ", autoTxt[(gGfxMask>>1)&1]);
 	drawSubItem("Disable Background: ", autoTxt[gGfxMask&1]);
 	drawSubItem("Disable Sprites: ", autoTxt[(gGfxMask>>4)&1]);
-	drawSubItem("Step Frame ", NULL);
 }
 
 
@@ -295,10 +286,6 @@ void borderSet() {
 	makeborder();
 }
 */
-void languageSet() {
-	gLang ^= 0x01;
-}
-
 void machineSet() {
 	gMachineSet++;
 	if (gMachineSet >= HW_SELECT_END) {
@@ -310,17 +297,7 @@ void speedHackSet() {
 	emuSettings ^= ALLOW_SPEED_HACKS;
 }
 
-void headphonesSet() {
-	emuSettings ^= ENABLE_HEADPHONES;
-	setLowBattery(emuSettings & ENABLE_HEADPHONES);
-}
-
 void refreshChgSet() {
 	emuSettings ^= ALLOW_REFRESH_CHG;
 	updateLCDRefresh();
-}
-
-void batteryChange() {
-	batteryLevel = 15000;				// 0x15000 for 24h battery?
-	setLowBattery(0);
 }

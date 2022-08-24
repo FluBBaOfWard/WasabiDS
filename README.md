@@ -1,17 +1,15 @@
-# Wasabi V1.0.0
+# Wasabi V1.0.1
 
 <img align="right" width="220" src="./logo.png" />
 
-This is a Bandai WonderSwan (Color/Crystal) & PocketChallenge V2 emulator for the Nintendo DS.
+This is a Watara/QuickShot Supervision emulator for the Nintendo DS.
 
 ## How to use:
 
 1. Create a folder named "nitroswan" in either the root of your flash card or in the data folder.
 This is where settings and save files end up.
-2. Now put game/bios files into a folder where you have (WonderSwan) roms.
+2. Now put game/bios files into a folder where you have (Supervision) roms.
 3. Depending on your flashcart you might have to DLDI patch the emulator.
-
-The save files should be compatible with most other WonderSwan emulators.
 
 When the emulator starts, you can either press L+R or tap on the screen to open
 up the menu.
@@ -19,8 +17,6 @@ Now you can use the cross or touchscreen to navigate the menus, A or double tap
 to select an option, B or the top of the screen to go back a step.
 
 To select between the tabs use R & L or the touchscreen.
-
-Hold Start while starting a game to enter the boot rom settings, the internal EEPROM is saved when saving settings.
 
 ## Menu:
 
@@ -44,10 +40,6 @@ Hold Start while starting a game to enter the boot rom settings, the internal EE
 	Machine Settings:
 		Machine: Select the emulated machine.
 		Select WS Bios: Load a real WS Bios.
-		Select WS Color Bios: Load a real WS Color Bios.
-		Select WS Crystal Bios: Load a real WS Crystal Bios.
-		Import internal EEPROM: Load a special internal EEPROM.
-		Clear internal EEPROM: Reset internal EEPROM.
 		Cpu speed hacks: Allow speed hacks.
 		Change Battery: Change to a new main battery (AA/LR6).
 		Language: Select between Japanese and English.
@@ -57,7 +49,7 @@ Hold Start while starting a game to enter the boot rom settings, the internal EE
 			200%: Game runs at double speed.
 			Max: Games can run up to 4 times normal speed (might change).
 			50%: Game runs at half speed.
-		Allow Refresh Change: Allow the Wonderswan to change NDS refresh rate.
+		Allow Refresh Change: Allow the Supervision to change NDS refresh rate.
 		Autoload State: Toggle Savestate autoloading.
 			Automagically load the savestate associated with the selected game.
 		Autoload NVRAM: Toggle EEPROM/SRAM autoloading.
@@ -91,19 +83,13 @@ Hold Start while starting a game to enter the boot rom settings, the internal EE
 
 ## Games:
 	There are 2 games that I know of that has problems.
-	Chou Denki Card Game.
-		You need to initialize NVRAM, this is the last item on the first page (初期化).
-	Kurupara.
-		Crashes after intro.
 
 ## Credits:
 
 Huge thanks to Loopy for the incredible PocketNES, without it this emu would
 probably never have been made.
 Thanks to:
-Flavor & Koyote for WonderSwan info.
-Godzil for the boot rom stubs. https://github.com/Godzil/NewOswan
-lidnariq for RTC info.
+Peter Trauner, Osman Celimli & Kevin Horton for docs about the Supervision.
 Dwedit for help and inspiration with a lot of things.
 
 

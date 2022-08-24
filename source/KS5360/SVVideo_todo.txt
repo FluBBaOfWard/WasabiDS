@@ -1,0 +1,10 @@
+Watara Supervision Video To do
+------------------------------
+
+	Add check for dirty tiles in tilemap renderer.
+	Handle LCD on/off.
+	Fix noise:
+		Different taps.
+		Frequency.
+	Only enable appropriate registers on the different versions of the SOC.
+

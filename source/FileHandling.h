@@ -7,12 +7,12 @@ extern "C" {
 
 #include "Emubase.h"
 
-#define FILEEXTENSIONS ".ws.wsc.pc2"
+#define FILEEXTENSIONS ".sv"
 
 extern ConfigData cfg;
 
 int initSettings(void);
-bool updateSettingsFromWS(void);
+bool updateSettingsFromSV(void);
 int loadSettings(void);
 void saveSettings(void);
 bool loadGame(const char *gameName);
@@ -25,14 +25,8 @@ void ejectCart(void);
 void selectGame(void);
 void selectBnWBios(void);
 void selectColorBios(void);
-void selectCrystalBios(void);
 int loadBnWBIOS(void);
 int loadColorBIOS(void);
-int loadCrystalBIOS(void);
-int loadIntEeproms(void);
-int saveIntEeproms(void);
-void selectEEPROM(void);
-void clearIntEeproms(void);
 
 #ifdef __cplusplus
 } // extern "C"

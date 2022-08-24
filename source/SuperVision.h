@@ -1,5 +1,5 @@
-#ifndef WONDERSWAN_HEADER
-#define WONDERSWAN_HEADER
+#ifndef SUPERVISION_HEADER
+#define SUPERVISION_HEADER
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,11 +14,11 @@ void unpackState(const void *statePtr);
 /// Gets the total state size in bytes.
 int getStateSize(void);
 
-/// Setup WonderSwan background for emulator screen.
+/// Setup Supervision background for emulator screen.
 void setupEmuBackground(void);
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
-#endif // WONDERSWAN_HEADER
+#endif // SUPERVISION_HEADER

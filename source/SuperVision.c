@@ -1,79 +1,52 @@
 #include <nds.h>
 
-#include "WonderSwan.h"
-#include "PCV2Border.h"
-#include "WSBorder.h"
-#include "WSCBorder.h"
+#include "SuperVision.h"
+#include "SVBorder.h"
 #include "Cart.h"
 #include "Gfx.h"
-#include "ARMV30MZ/ARMV30MZ.h"
+#include "ARM6502/M6502.h"
 
 
 int packState(void *statePtr) {
 	int size = 0;
-	memcpy(statePtr+size, wsRAM, sizeof(wsRAM));
-	size += sizeof(wsRAM);
-	size += sphinxSaveState(statePtr+size, &sphinx0);
-	size += V30SaveState(statePtr+size, &V30OpTable);
-	memcpy(statePtr+size, wsSRAM, sizeof(wsSRAM));
-	size += sizeof(wsSRAM);
-	size += wsEepromSaveState(statePtr+size, &extEeprom);
+	memcpy(statePtr+size, svRAM, sizeof(svRAM));
+	size += sizeof(svRAM);
+	size += svVideoSaveState(statePtr+size, &sphinx0);
+	size += m6502SaveState(statePtr+size, &m6502OpTable);
+	memcpy(statePtr+size, svSRAM, sizeof(svSRAM));
+	size += sizeof(svSRAM);
 	return size;
 }
 
 void unpackState(const void *statePtr) {
 	int size = 0;
-	memcpy(wsRAM, statePtr+size, sizeof(wsRAM));
-	size += sizeof(wsRAM);
-	size += sphinxLoadState(&sphinx0, statePtr+size);
-	size += V30LoadState(&V30OpTable, statePtr+size);
-	memcpy(wsSRAM, statePtr+size, sizeof(wsSRAM));
-	size += sizeof(wsSRAM);
-	size += wsEepromLoadState(&extEeprom, statePtr+size);
+	memcpy(svRAM, statePtr+size, sizeof(svRAM));
+	size += sizeof(svRAM);
+	size += svVideoLoadState(&sphinx0, statePtr+size);
+	size += m6502LoadState(&m6502OpTable, statePtr+size);
+	memcpy(svSRAM, statePtr+size, sizeof(svSRAM));
+	size += sizeof(svSRAM);
 }
 
 int getStateSize() {
 	int size = 0;
-	size += sizeof(wsRAM);
-	size += sphinxGetStateSize();
-	size += V30GetStateSize();
-	size += sizeof(wsSRAM);
-	size += wsEepromGetStateSize();
+	size += sizeof(svRAM);
+	size += svVideoGetStateSize();
+	size += m6502GetStateSize();
+	size += sizeof(svSRAM);
 	return size;
 }
 
-void setupPCV2Background() {
+void setupSVBackground() {
 	vramSetBankF(VRAM_F_LCD);
-	decompress(PCV2BorderTiles, BG_TILE_RAM(1), LZ77Vram);
-	decompress(PCV2BorderMap, BG_MAP_RAM(2), LZ77Vram);
-	memcpy(VRAM_F, PCV2BorderPal, PCV2BorderPalLen);
-	vramSetBankF(VRAM_F_BG_EXT_PALETTE_SLOT23);
-}
-
-void setupWSBackground() {
-	vramSetBankF(VRAM_F_LCD);
-	decompress(WSBorderTiles, BG_TILE_RAM(1), LZ77Vram);
-	decompress(WSBorderMap, BG_MAP_RAM(2), LZ77Vram);
-	memcpy(VRAM_F, WSBorderPal, WSBorderPalLen);
-	vramSetBankF(VRAM_F_BG_EXT_PALETTE_SLOT23);
-}
-
-void setupWSCBackground() {
-	vramSetBankF(VRAM_F_LCD);
-	decompress(WSCBorderTiles, BG_TILE_RAM(1), LZ77Vram);
-	decompress(WSCBorderMap, BG_MAP_RAM(2), LZ77Vram);
-	memcpy(VRAM_F, WSCBorderPal, WSCBorderPalLen);
+	decompress(SVBorderTiles, BG_TILE_RAM(1), LZ77Vram);
+	decompress(SVBorderMap, BG_MAP_RAM(2), LZ77Vram);
+	memcpy(VRAM_F, SVBorderPal, SVBorderPalLen);
 	vramSetBankF(VRAM_F_BG_EXT_PALETTE_SLOT23);
 }
 
 void setupEmuBackground() {
-	if (gMachine == HW_WONDERSWANCOLOR) {
-		setupWSCBackground();
-	}
-	else if (gMachine == HW_WONDERSWAN) {
-		setupWSBackground();
-	}
-	else {
-		setupPCV2Background();
-	}
+//	if (gMachine == HW_SUPERVISION) {
+		setupSVBackground();
+//	}
 }

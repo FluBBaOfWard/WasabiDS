@@ -1,18 +1,17 @@
 #ifdef __arm__
 
-#include "ARMV30MZ/ARMV30MZmac.h"
-#include "Sphinx/Sphinx.i"
+#include "ARM6502/M6502mac.h"
+#include "KS5360/SVVideo.i"
 
 	.global empty_IO_R
 	.global empty_IO_W
 	.global rom_W
-	.global cpuReadMem20
-	.global cpuReadMem20W
-	.global dmaReadMem20W
-	.global cpuWriteMem20
-	.global cpuWriteMem20W
-	.global dmaWriteMem20W
-	.global setBootRomOverlay
+	.global ram6502W
+	.global ram6502R
+	.global mem6502R4
+	.global mem6502R5
+	.global mem6502R6
+	.global mem6502R7
 
 
 	.syntax unified
@@ -39,21 +38,6 @@ rom_W:						;@ Write ROM address (error)
 	mov r0,#0xB0
 	bx lr
 ;@----------------------------------------------------------------------------
-setBootRomOverlay:			;@ r0=arg0, 0=remove overlay, 1=WS, 2=WSC
-;@----------------------------------------------------------------------------
-	cmp r0,#3
-	ldrmi r1,=bootRomSwitch
-	ldrmi r2,=bootRomSwitch2
-	adr r3,commandList
-	ldrmi r0,[r3,r0,lsl#2]
-	strmi r0,[r1]
-	strmi r0,[r2]
-commandList:
-	bx lr
-	subs r2,r2,#0xFF000
-	subs r2,r2,#0xFE000
-
-;@----------------------------------------------------------------------------
 
 #ifdef NDS
 	.section .itcm						;@ For the NDS ARM9
@@ -63,114 +47,48 @@ commandList:
 	.align 2
 
 ;@----------------------------------------------------------------------------
-cpuReadWordUnaligned:	;@ Make sure cpuReadMem20 does not use r3 or r12!
+ram6502W:					;@ Ram write ($0000-$1FFF)
 ;@----------------------------------------------------------------------------
-	eatCycles 1
-	stmfd sp!,{lr}
-	mov r3,r0
-	bl cpuReadMem20
-	mov r12,r0
-	add r0,r3,#0x1000
-	bl cpuReadMem20
-	orr r0,r12,r0,lsl#8
-	ldmfd sp!,{pc}
+	strb r0,[m6502zpage,addy]
+	bx lr
 ;@----------------------------------------------------------------------------
-cpuReadMem20:		;@ In r0=address set in top 20 bits. Out r0=val, r1=phyAdr
+vram6502W:					;@ Ram write ($4000-$5FFF)
 ;@----------------------------------------------------------------------------
-	mvn r2,r0,lsr#28
-	ldr r1,[v30ptr,r2,lsl#2]
-	mov r2,r0,lsr#12
-	ldrb r0,[r1,r0,lsr#12]!
-bootRomSwitch:
-	subs r2,r2,#0xFE000
-	bxcc lr
-	ldr r1,=biosBase
-	ldr r1,[r1]
-	ldrb r0,[r1,r2]!
+	add r1,m6502zpage,#0x2000
+	strb r0,[r1,addy]
+	add r1,m6502zpage,#0x4000
+	strb m6502a,[r1,addy,lsr#11]
+	bx lr
+;@----------------------------------------------------------------------------
+ram6502R:					;@ Ram read ($0000-$1FFF)
+;@----------------------------------------------------------------------------
+	ldrb r0,[m6502zpage,addy]
+	bx lr
+;@----------------------------------------------------------------------------
+mem6502R4:					;@ Mem read ($8000-$9FFF)
+;@----------------------------------------------------------------------------
+	ldr r1,[m6502optbl,#m6502MemTbl+16]
+	ldrb r0,[r1,addy]
+	bx lr
+;@----------------------------------------------------------------------------
+mem6502R5:					;@ Mem read ($A000-$BFFF)
+;@----------------------------------------------------------------------------
+	ldr r1,[m6502optbl,#m6502MemTbl+20]
+	ldrb r0,[r1,addy]
+	bx lr
+;@----------------------------------------------------------------------------
+mem6502R6:					;@ Mem read ($C000-$DFFF)
+;@----------------------------------------------------------------------------
+	ldr r1,[m6502optbl,#m6502MemTbl+24]
+	ldrb r0,[r1,addy]
+	bx lr
+;@----------------------------------------------------------------------------
+mem6502R7:					;@ Mem read ($E000-$FFFF)
+;@----------------------------------------------------------------------------
+	ldr r1,[m6502optbl,#m6502MemTbl+28]
+	ldrb r0,[r1,addy]
 	bx lr
 
-;@----------------------------------------------------------------------------
-cpuReadMem20W:		;@ In r0=address set in top 20 bits. Out r0=val, r1=phyAdr
-;@----------------------------------------------------------------------------
-	tst r0,#0x1000
-	bne cpuReadWordUnaligned
-dmaReadMem20W:
-	mvn r2,r0,lsr#28
-	ldr r1,[v30ptr,r2,lsl#2]
-	mov r2,r0,lsr#12
-	ldrh r0,[r1,r2]!
-bootRomSwitch2:
-	subs r2,r2,#0xFE000
-	bxcc lr
-	ldr r1,=biosBase
-	ldr r1,[r1]
-	ldrh r0,[r1,r2]!
-	bx lr
-
-
-;@----------------------------------------------------------------------------
-cpuWriteWordUnaligned:	;@ Make sure cpuWriteMem20 does not change r0 or r1!
-;@----------------------------------------------------------------------------
-	eatCycles 1
-	stmfd sp!,{lr}
-	bl cpuWriteMem20
-	ldmfd sp!,{lr}
-	add r0,r0,#0x1000
-	mov r1,r1,lsr#8
-;@----------------------------------------------------------------------------
-cpuWriteMem20:		;@ r0=address set in top 20 bits
-;@----------------------------------------------------------------------------
-	movs r2,r0,lsr#28
-	bne tstSRAM_WB
-;@----------------------------------------------------------------------------
-ram_WB:				;@ Write ram ($00000-$0FFFF)
-;@----------------------------------------------------------------------------
-	ldr r2,[v30ptr,#v30MemTblInv-1*4]
-	strb r1,[r2,r0,lsr#12]
-	add r2,r2,#0x10000		;@ Size of wsRAM, ptr to DIRTYTILES.
-	strb r0,[r2,r0,lsr#17]
-	bx lr
-;@----------------------------------------------------------------------------
-tstSRAM_WB:
-;@----------------------------------------------------------------------------
-	cmp r2,#1
-	bne rom_W
-;@----------------------------------------------------------------------------
-sram_WB:			;@ Write sram ($10000-$1FFFF)
-;@----------------------------------------------------------------------------
-	ldr r2,[v30ptr,#v30MemTblInv-2*4]
-	strb r1,[r2,r0,lsr#12]
-	bx lr
-
-;@----------------------------------------------------------------------------
-cpuWriteMem20W:		;@ r0=address set in top 20 bits
-;@----------------------------------------------------------------------------
-	tst r0,#0x1000
-	bne cpuWriteWordUnaligned
-	movs r2,r0,lsr#28
-	bne tstSRAM_WW
-;@----------------------------------------------------------------------------
-ram_WW:				;@ Write ram ($00000-$0FFFF)
-dmaWriteMem20W:
-;@----------------------------------------------------------------------------
-	ldr r2,[v30ptr,#v30MemTblInv-1*4]
-	add r3,r2,#0x10000		;@ Size of wsRAM, ptr to DIRTYTILES.
-	add r2,r2,r0,lsr#12
-	strh r1,[r2]
-	strb r0,[r3,r0,lsr#17]
-	bx lr
-;@----------------------------------------------------------------------------
-tstSRAM_WW:
-;@----------------------------------------------------------------------------
-	cmp r2,#1
-	bne rom_W
-;@----------------------------------------------------------------------------
-sram_WW:			;@ Write sram ($10000-$1FFFF)
-;@----------------------------------------------------------------------------
-	ldr r2,[v30ptr,#v30MemTblInv-2*4]
-	mov r0,r0,lsr#12
-	strh r1,[r2,r0]
-	bx lr
 ;@----------------------------------------------------------------------------
 	.end
 #endif // #ifdef __arm__

@@ -1,0 +1,942 @@
+;*******************************************************************************
+; Watara SuperVision                                                           *
+;*******************************************************************************
+; A LONG TIME AGO IN AN EPOXY BLOB FAR, FAR AWAY... KS5360!
+;
+; Everything is driven by a 4MHz crystal (or ceramic resonator) and any values
+; given below in 'clocks' or 'ticks' are at this rate.
+;
+; The 65C02 core doesn't support RMB, SMB, BBR, BBS, WAI, or STP.
+;-------------------------------------------------------------------------------
+.define NULL			0
+
+.define TRUE			(0 - 1)
+.define FALSE			0
+
+.define LO			0
+.define HI			1
+.define BANK			2
+
+.define PS_N			%10000000
+.define PS_V			%01000000
+.define PS_B			%00010000
+.define PS_D			%00001000
+.define PS_I			%00000100
+.define PS_Z			%00000010
+.define PS_C			%00000001
+
+.define ZEROPAGE		$0000
+.define ZEROPAGE_BASE		$0000
+.define ZEROPAGE_SIZE		$0100
+.define ZEROPAGE_TOP		(ZEROPAGE_BASE + ZEROPAGE_SIZE)
+
+.define STACK			$0100
+.define STACK_BASE		$0100
+.define STACK_SIZE		$0100
+.define STACK_TOP		(STACK_BASE + STACK_SIZE)
+
+.macro DOP
+	.db $44,$EA
+.endm
+
+.macro RA
+.redefine _OUT (\1 - 1)
+.endm
+
+.macro RAL
+.redefine _OUT <(\1 - 1)
+.endm
+
+.macro RAH
+.redefine _OUT >(\1 - 1)
+.endm
+
+
+
+
+;*******************************************************************************
+; Cartridges                                                                   *
+;*******************************************************************************
+; The diagram below is arranged to resemble holding a cartridge with its pins
+; facing towards you and the game label on the left.
+;
+;                      (A) LABEL SIDE |  | BLANK SIDE (B)
+;                     ----------------|  |----------------
+;
+;                                 .----------.
+;                  (1)   PGND --- | A1    B1 | <-> L0     (4)
+;                         GND --- | A2    B2 | <-> L3     (4)
+;                  (4)     L2 <-> | A3    B3 | --> B2     (3)
+;                  (4)     L1 <-> | A4    B4 | --> B1     (3)
+;                                 | A5    B5 | --> B0     (3)
+;                                 | A6    B6 | --> A13
+;                          D7 <-> | A7    B7 | --> A12
+;                          D6 <-> | A8    B8 | --> A11
+;                          D5 <-> | A9    B9 | --> A10
+;                          D4 <-> | A10  B10 | --> A9
+;                          D3 <-> | A11  B11 | --> A8
+;                          D2 <-> | A12  B12 | --> A7
+;                          D1 <-> | A13  B13 | --> A6
+;                          D0 <-> | A14  B14 | --> A5
+;                  (2)    R/W <-- | A15  B15 | --> A4
+;                                 | A16  B16 | --> A3
+;                                 | A17  B17 | --> A2
+;                                 | A18  B18 | --> A1
+;                                 | A19  B19 | --> A0
+;                       +5VDC --- | A20  B20 | --> /CARD
+;                                 `----------`
+;
+; (1) PGND and GND must be connected to power on the console - most cartridges
+;     contain a short between them.
+;
+; (2) This R/W signal isn't directly from the 65C02 core within the KS5360 but
+;     rather a gated version, it will only lower for accesses in $0000 - $1FFF
+;     so it's more of a WRAM R/W.
+;
+; (3) B2 - B0 are bank bits from the KS5360's stock mapper - these are usually
+;     connected to A16 - A14 of a 32KB, 64KB, or 128KB ROM.
+;
+;     assign bank_out = cpu_a14
+;         ? 3'b111
+;         : (is_adma
+;             ? apu_adma_config[6:4]
+;             : sys_config[7:5]);       ...is a good approximation.
+;
+; (4) L3 - L0 are the Link Port's I/O - only the 'MAGNUM' variant routed these
+;     to the cartridge slot as additional banking bits.
+;
+
+
+
+
+;*******************************************************************************
+; Memory Map                                                                   *
+;*******************************************************************************
+; $0000 - $1FFF : 8KB WRAM
+; $2000 - $3FFF : Hardware Registers
+; $4000 - $5FFF : 8KB VRAM (on VBUS)
+; $6000 - $7FFF : Free
+; $8000 - $FFFF : Game Cartridge (/CARD)
+; \- $8000 - $BFFF : Paged ROM Bank (SYS_CONFIG,7-5 or APU_ADMA_CONFIG,6-4)
+;    $C000 - $FFFF : Fixed ROM Bank (LAST - %111)
+;    \- $FFFA - $FFFB : NMI Vector
+;       $FFFC - $FFFD : Reset Vector
+;       $FFFE - $FFFF : IRQ Vector
+;-------------------------------------------------------------------------------
+.define WRAM			$0000
+.define WRAM_BASE		$0000
+.define WRAM_SIZE		$2000
+.define WRAM_TOP		(WRAM_BASE + WRAM_SIZE)
+
+.define REGS			$2000
+.define REGS_BASE		$2000
+.define REGS_SIZE		$2000
+
+.define VRAM			$4000
+.define VRAM_BASE		$4000
+.define VRAM_SIZE		$2000
+.define VRAM_TOP		(VRAM_BASE + VRAM_SIZE)
+
+.define CART_SWAP		$8000
+.define CART_SWAP_BASE		$8000
+.define CART_SWAP_SIZE		$4000
+.define CART_SWAP_TOP		(CART_SWAP_BASE + CART_SWAP_SIZE)
+
+.define CART_FIXED		$C000
+.define CART_FIXED_BASE		$C000
+.define CART_FIXED_SIZE		$4000
+.define CART_FIXED_TOP		(CART_FIXED_BASE + CART_FIXED_SIZE)
+
+
+
+
+;*******************************************************************************
+; Registers                                                                    *
+;*******************************************************************************
+; System Control
+;-------------------------------------------------------------------------------
+; NMIs are triggered at a fixed rate of (4000000 / 65536) = 61.03515625 Hz.
+; Switching the NMI Tick on or off using SYS_CONFIG,0 won't affect its divider.
+;
+; IRQs can be raised by either the Timer or Audio DMA hardware - these are both
+; masked using SYS_CONFIG,2-1 and can be polled through SYS_STATUS,1-0.
+;
+
+.define SYS_CONFIG		$2026
+;---------------------------------------
+.define SYS_CONFIG_BANK		%11100000
+.define SYS_CONFIG_TIMER	%00010000
+.define SYS_CONFIG_TIMER_DIV16K	%00010000
+.define SYS_CONFIG_TIMER_DIV256	%00000000
+.define SYS_CONFIG_LCD		%00001000
+.define SYS_CONFIG_LCD_ON	%00001000
+.define SYS_CONFIG_LCD_OFF	%00000000
+.define SYS_CONFIG_IRQ_A	%00000100
+.define SYS_CONFIG_IRQ_A_ON	%00000100
+.define SYS_CONFIG_IRQ_A_OFF	%00000000
+.define SYS_CONFIG_IRQ_T	%00000010
+.define SYS_CONFIG_IRQ_T_ON	%00000010
+.define SYS_CONFIG_IRQ_T_OFF	%00000000
+.define SYS_CONFIG_IRQ		%00000110
+.define SYS_CONFIG_IRQ_ON	%00000110
+.define SYS_CONFIG_IRQ_OFF	%00000000
+.define SYS_CONFIG_NMI		%00000001
+.define SYS_CONFIG_NMI_ON	%00000001
+.define SYS_CONFIG_NMI_OFF	%00000000
+; -/W
+; 7 - 5 : 16KB Page Selection for $8000 - $BFFF
+; 4 : Timer Prescaler Selection (1 == /16384, 0 == /256)
+; 3 : LCD Controller (1 == Enabled, 0 == Disabled)
+; 2 : Audio DMA Complete IRQ (1 == Enabled, 0 == Mask)
+; 1 : Timer Expired IRQ (1 == Enabled, 0 == Mask)
+; 0 : NMI Tick (1 == Enabled, 0 == Disabled)
+;
+; Writing any value to this register will affect the LCD Controller.
+
+
+.define SYS_STATUS		$2027
+;---------------------------------------
+.define SYS_STATUS_AUDIO_DMA	%00000010
+.define SYS_STATUS_TIMER	%00000001
+; -R/
+; 7 - 2 : ???
+; 1 : Audio DMA Complete (APU_ADMA_ACK to clear)
+; 0 : Timer Expired (TIM_ACK to clear)
+;
+; These flags aren't affected by the IRQ masks in SYS_CONFIG,2-1 and can only
+; be cleared using TIM_ACK or APU_ADMA_ACK.
+
+
+
+
+;-------------------------------------------------------------------------------
+; Timer
+;-------------------------------------------------------------------------------
+; Just an 8-Bit down counter which decrements until it reaches zero, then stops
+; and raises an interrupt - no autoreload or wrapping. The counter is clocked
+; by a /256 or /16384 prescaler selected through SYS_CONFIG,4.
+;
+;
+; The prescaler is a free running counter which increments every tick. There is
+; no way to reset it so all timer durations are between N and N - 1 unless you
+; manually synchronize by polling until a decrement occurs.
+;
+; Either Bit 7 (/256) or Bit 13 (/16384) from the prescaler is used as a clock
+; for the timer's operations. It'll decrement on every rising edge and evaluate
+; whether it needs to raise an interrupt while low.
+;
+;
+; This implementation causes a few interesting quirks...
+;
+; - The timer always decrements half a prescaler period after the NMI.
+;
+; - Changing the prescaler tap can inadvertently clock the timer if the new
+;   setting causes a rising edge to occur.
+;
+; - Writing zeroes to TIM_COUNT will cause an interrupt to fire within half
+;   of a prescaler period - depending upon when the write occurred...
+;   \- Prescaler tap is '1' -> interrupt deferred until tap output is '0'.
+;    - Prescaler tap is '0' -> interrupt fires immediately.
+;
+
+.define TIM_COUNT		$2023
+;---------------------------------------
+.define TIM_COUNT_FLUSH		$02
+.define TIM_COUNT_EXPIRED	$00
+; -R/W
+; Reading yields the down counter's current value, writing sets it.
+
+
+.define TIM_ACK			$2024
+;---------------------------------------
+; -R/W
+; Reading or writing acknowledges the timer interrupt.
+
+
+
+
+;-------------------------------------------------------------------------------
+; Input
+;-------------------------------------------------------------------------------
+; Pressing any button or direction will set its respective bit LOW.
+;
+
+.define JOY			$2020
+;---------------------------------------
+.define JOY_PAUSE		%10000000
+.define JOY_START		%10000000
+.define JOY_SELECT		%01000000
+.define JOY_A			%00100000
+.define JOY_B			%00010000
+.define JOY_BUTTON		%11110000
+.define JOY_UP			%00001000
+.define JOY_DOWN		%00000100
+.define JOY_LEFT		%00000010
+.define JOY_RIGHT		%00000001
+.define JOY_DIRECTION		%00001111
+; -R/
+; 7 : Start / Pause
+; 6 : Select
+; 5 : 'A'
+; 4 : 'B'
+; 3 : Up
+; 2 : Down
+; 1 : Left
+; 0 : Right
+
+
+
+
+;-------------------------------------------------------------------------------
+; Link Port
+;-------------------------------------------------------------------------------
+; Four pins of GPIO...
+; How these are utilized (if at all) differs among the hardware variants.
+;
+; 9107 (Brick)    - N/C
+; 9205 (Bendable) - COMM Port (see pinout below)
+; .... (Magnum)   - Cartridge Slot (L0 - L3)
+;
+;
+;   .---------- LINK_DATA,0
+;   | .-------- LINK_DATA,1
+;   | | .------ LINK_DATA,2
+;   | | | .---- LINK_DATA,3
+;   | | | |
+;
+;   1 2 3 4 5
+; -------------
+; \ o o o o o /
+;  \ o o o o /
+;   ---------
+;    6 7 8 9
+;
+;    |   |
+;    |   `----- VCC (+5V)
+;    |
+;    `--------- GND
+;
+
+.define LINK_DATA		$2021
+;---------------------------------------
+; -R/W
+; 7 - 4 : ???
+; 3 - 0 : Data
+
+
+.define LINK_DDR		$2022
+;---------------------------------------
+; -/W
+; 7 - 4 : ???
+; 3 - 0 : Data Direction (1 == Input, 0 == Output)
+
+
+
+
+;-------------------------------------------------------------------------------
+; DMA
+;-------------------------------------------------------------------------------
+; Can ONLY perform data transfers between the CPU and LCD VRAM (CBUS <-> VBUS)
+; but is fairly quick about it - will transfer data at one of two speeds...
+;
+; - If the LCD Driver is [ON]
+;   Five bytes are copied every six clocks with the last clock left open for
+;   the display controller to read from VRAM (3.33MB/s).
+;
+; - If the LCD Driver is [OFF]
+;   One byte is copied every clock (4.0MB/s).
+;
+; Both DMA_CBUS and DMA_VBUS are incremented during a transfer while DMA_LEN is
+; decremented - kicking off subsequent transfers without adjusting any of these
+; registers will perform a 4096 Byte (maximum size) transfer.
+;
+; Any IRQs or NMIs are deferred until after a transfer completes.
+;
+
+.define DMA_CBUS		$2008
+.define DMA_CBUS_LO		$2008
+.define DMA_CBUS_HI		$2009
+;---------------------------------------
+; -/W
+; CBUS Address.
+
+
+.define DMA_VBUS		$200A
+.define DMA_VBUS_LO		$200A
+.define DMA_VBUS_HI		$200B
+;---------------------------------------
+.define DMA_VBUS_MODE		$4000
+.define DMA_VBUS_MODE_VC	$0000
+.define DMA_VBUS_MODE_CV	$4000
+.define DMA_VBUS_ADDR		$1FFF
+; -/W
+; VBUS Address and Transfer Mode.
+;
+; 15 : ???
+; 14 : Transfer Type (0 == VBUS -> CBUS, 1 == CBUS -> VBUS)
+; 13 : ???
+; 12 - 0 : VBUS (Video) Address
+;
+; The VBUS Address cursor will wrap within the bounds of VRAM - for example
+; a 4KB transfer from CBUS $C000 -> VBUS $1800 will write the first half of
+; its data to $1800 - $1FFF and continue at $0000 - $07FF.
+
+
+.define DMA_LEN			$200C
+;---------------------------------------
+; -/W
+; Transfer Length in 16 Byte chunks - i.e. $08 == 128 Bytes.
+; Setting this parameter to zero yields a maximum transfer size of 4096 Bytes.
+
+
+.define DMA_REQ			$200D
+;---------------------------------------
+.define DMA_REQ_START		%10000000
+.define DMA_REQ_CLOSE		%00000000
+; -/W
+; 7 : Start DMA Transfer
+; 6 - 0 : ???
+;
+; Any writes with Bit 7 set will start a transfer using the current parameters
+; in DMA_CBUS, DMA_VBUS, and DMA_LEN.
+;
+; The only software to use the DMA Controller is "Journey to the West" - which
+; always writes $80,$00 here in that order. While only the leading $80 seems to
+; be necessary it is probably best to follow this convention.
+
+
+
+
+;-------------------------------------------------------------------------------
+; LCD Controller
+;-------------------------------------------------------------------------------
+; This module is simple in application, yet complex to understand. At the end
+; of the day - it's scanning out a software rendered image with numerous edge
+; cases and quirks during that process.
+;
+; While all (currently known) hardware uses a 160 x 160 LCD panel, the driver
+; supports other dimensions via LCD_X_SIZE and LCD_Y_SIZE. Most software will
+; set these to $A0 (160) - but the panel can be driven using alternate sizing
+; which affects both the scan pattern and timing.
+;
+;
+; Let's set both LCD_X_SIZE and LCD_Y_SIZE to $A0 (which is their recommended
+; configuration - be nice to the panel). That'll give us...
+;
+; - The 8KB of VRAM ($4000 - $5FFF) contains a 192 x 170 x 2bpp surface which
+;   is arranged as 170 Lines of 48 Bytes each, $5FE0 - $5FFF aren't used.
+;
+;       $4000 [S]_____________________________________ ..........  $402F
+;        ....  |                                      |         . A ....
+;              |                                      |         . |
+;              |                                      |         . |
+;              |                                      |         . |
+;              |      VISIBLE REGION (160 x 160)      |         . |
+;              |                                      |         . |  170
+;              |                                      |         . | Lines
+;              |                                      |         . |
+;              |______________________________________|         . |
+;              .                                                . |
+;              .                                                . |
+;        ....  .                                                . V ....
+;       $5FB0  ..................................................  $5FDF
+;  
+;               <---------------------------------------------->
+;                                  192 Pixels
+;
+; - Pixel data are stored as four bit pairs within each byte (chunky).
+;
+;   LEFT --> [] [] [] [] --> RIGHT      00 == White
+;            -- -- -- --                01 == Light Grey
+;   BITS  :  10 32 54 76                10 == Dark Grey
+;   PAIR  :  AA BB CC DD                11 == Black
+;
+;
+; - LCD_X_SCROLL and LCD_Y_SCROLL are used to position the display's visible
+;   region within the framebuffer - both have pixel granularity and are able
+;   to cover the entire 192 x 170 surface.
+;
+;   LCD_X_SCROLL : $00 - $1F
+;   LCD_Y_SCROLL : $00 - $0A
+;
+;       $4000  ..................................................  $402F
+;        ....  .    |                                           . A ....
+;              .---[S]_____________________________________     . |
+;              .    |                                      |    . |
+;              .    |                                      |    . |
+;              .    |                                      |    . |
+;              .    |                                      |    . |  170
+;              .    |      VISIBLE REGION (160 x 160)      |    . | Lines
+;              .    |                                      |    . |
+;              .    |                                      |    . |
+;              .    |                                      |    . |
+;              .    |______________________________________|    . |
+;        ....  .                                                . V ....
+;       $5FB0  ..................................................  $5FDF
+;  
+;               <---------------------------------------------->
+;                                  192 Pixels
+;
+;   There's no horizontal wrapping within the surface - any fetches past one
+;   line will continue (linearly) into the next one's data.
+;
+;   Vertical wrapping is supported _only_ when LCD_X_SCROLL < $1C, where the
+;   next fetched line snaps back from $A9 (169) to $00. This can be used for
+;   scrolling a surface up to 187 pixels wide and of infinite height.
+;
+;   LCD_X_SCROLL : $00 - $1B
+;   LCD_Y_SCROLL : $00 - $A9
+;
+;       $4000  ..................................................  $402F
+;        ....  .    |                                      |    . A ....
+;              .    |______________________________________|    . |
+;              .    |                                           . |
+;              .    |                                           . |
+;              .    |                                           . |
+;              .---[S]_____________________________________     . |  170
+;              .    |                                      |    . | Lines
+;              .    |                                      |    . |
+;              .    |                                      |    . |
+;              .    |                                      |    . |
+;              .    |      VISIBLE REGION (160 x 160)      |    . |
+;        ....  .    |                                      |    . V ....
+;       $5FB0  .....|......................................|.....  $5FDF
+;  
+;               <---------------------------------------------->
+;                                  192 Pixels
+;
+;   An LCD_Y_SCROLL value of $AA (170) appears identical to $00. Exceeding the
+;   bounds above will reveal strange quirks in the fetch controller (see nitty
+;   gritty section below).
+;
+;
+; So what's really going on under the hood (or epoxy glob)?
+;
+; The LCD Controller lives in a timing bubble - we can guess a displacement in
+; relation to where it was but can't easily synchronize on a particular row or
+; column as they're being shifted out.
+;
+; It does what it wants, when it wants to.
+; It's also extremely predictable.
+;
+; Fetch : 6 Clocks (@ 4MHz)
+; ------
+; Line  : ((LCD_X_SIZE / 4) + 1) * [Fetch]
+; Field : LCD_Y_SIZE * [Line]
+; Frame : 2 * [Field]
+;
+; One complete scan of the panel (frame) consists of two passes (fields) with
+; inverted polarity - this generates the four 2bpp tones. Both fields operate
+; with identical timing and memory fetches, tied to LCD_X_SIZE and LCD_Y_SIZE.
+;
+;
+; Enabling the display through SYS_CONFIG will take effect at the start of the
+; next frame - the LCD Controller keeps running through scans while 'disabled'
+; albeit with the panel off and no memory accesses (allowing VBUS <-> CBUS DMA
+; to run at 4.0MB/s).
+;
+; There is a (significantly irritating) quirk where writing to SYS_CONFIG will
+; disable the panel until the start of its next frame. I'm not sure if this is
+; actually harmful to the panel - but it seems very rude.
+;
+;
+; After the display is enabled we're ready to start a field by calculating our
+; initial offset into the framebuffer ($0000 - $1FFF on VBUS).
+;
+; START = ( (LCD_Y_SCROLL * 0x30) + (LCD_X_SCROLL / 4) ) & 0x1FFF;
+; if(START >= 0x1FE0)
+; {
+;     START = START & 0x001F;
+; }
+;
+;
+; On each line [START] is copied to a [FETCH] pointer which then walks through
+; its ((LCD_X_SIZE / 4) + 1) Bytes of data - where the extra fetch is used for
+; horizontal scrolling. Fetches are sequential unless they reach $1FE0 - which
+; nudges the offset and will affect the next line's evaluation ('Quirk Line').
+;
+; FETCH = START;
+;
+; for(BYTE = 0; BYTE < ((LCD_X_SIZE / 4) + 1); BYTE++)
+; {
+;     DATA = VRAM[FETCH];
+;
+;     FETCH = (FETCH + 1) & 0x1FFF;
+;     if(0x1FE0 == FETCH)
+;     {
+;         // ---- 'Quirk Line' ----
+;         FETCH = (FETCH + 0x0040) & 0x1FFF;
+;         QUIRK = TRUE;
+;     }
+; }
+;
+; ...
+;
+; START = START + ( (LCD_X_SIZE >= 0xC4) ? 0x70 : 0x30 );
+; if(QUIRK)
+; {
+;     START = (START + 0x0040) & 0x1FFF;
+;     QUIRK = FALSE;
+; }
+; else if(START >= (0x1FB0 + (LCD_X_SIZE / 4)))
+; {
+;     START = START & 0x001F;
+; }
+;
+;
+; This repeats for LCD_Y_SIZE lines and then the field is over. I've not found
+; a good (hardware) explanation for what's going on with 'Quirk Lines' but the
+; formula above seems to replicate it okay.
+;
+;
+; Using an LCD_X_SIZE of $C4 or larger activates 'Wide Step Mode' which uses a
+; line size of 112 Bytes when traversing the framebuffer. This doesn't seem to
+; affect how [START] is calculated at the beginning of each field, so vertical
+; scrolling is... it doesn't work. I've yet to investigate how wrapping or any
+; other behaviors might change while using this mode.
+;
+
+.define LCD_X_SIZE		$2000
+.define LCD_Y_SIZE		$2001
+;---------------------------------------
+; -/W
+; Panel Dimensions.
+;
+; Set these to $A0,$A0 (160 x 160) before enabling the display.
+
+
+.define LCD_X_SCROLL		$2002
+;---------------------------------------
+; -/W
+; Horizontal (Column) Offset.
+;
+; 7 - 2 : Fetch Displacement (Coarse)
+; 1 - 0 : Pixel Delay (Fine)
+;
+; Any changes to the fetch displacement affect the next field while changes
+; to the pixel delay affect the next line.
+
+
+.define LCD_Y_SCROLL		$2003
+;---------------------------------------
+; -/W
+; Vertical (Row) Offset.
+;
+; Any changes will take effect on the next field.
+
+
+
+
+;-------------------------------------------------------------------------------
+; Audio - Overview
+;-------------------------------------------------------------------------------
+; The APU features four audio channels with limited stereo support.
+;
+; WAVE/L - Pulse Generator featuring 12.5%, 25%, 50%, and 75% duty cycles.
+; WAVE/R - ...
+; ADMA   - Asynchronous Streaming of 4-Bit PCM.
+; LFSR   - Noise Generator with 15-Bit and 7-Bit Feedback Taps.
+;
+;  --------                      -------
+; | WAVE/L |---(+)---(+)--------| DAC/L |---> LEFT SPEAKER
+;  --------     |     |          -------
+;               |     |
+;  --------     |     |
+; |  ADMA  |---[C]--- | ---.
+;  --------           |    |
+; |  LFSR  |---[C]----`    |
+;  --------     |          |
+;               |          |
+;  --------     |          |     -------
+; | WAVE/R |---(+)--------(+)---| DAC/R |---> RIGHT SPEAKER
+;  --------                      -------
+;
+; WAVE/L and WAVE/R are exclusively assigned to the LEFT and RIGHT outputs.
+; ADMA and LFSR can be routed to the LEFT, RIGHT, or CENTER.
+;
+; The DACs (DAC/L and DAC/R) only have 4-Bit granularity and clamp the sum
+; of their inputs (WAVE/L or WAVE/R + ADMA + LFSR) at 15 - this allows one
+; channel to saturate a DAC if enabled at maximum volume.
+;
+
+
+
+
+; Audio - WAVE/L and WAVE/R
+;-------------------------------------------------------------------------------
+; Both channels operate identically aside from their hard panning.
+;
+;                     ---------------------
+;                    |  FREQUENCY DIVIDER  |
+;                    |---------------------|
+; (SYS_CLK / 2) ---> |  { $0000 - $07FF }  | (WAVE_DIV)
+;                     ---------------------
+;                                         |
+;  .------------ ( WSG_CLK ) -------------`
+;  |
+;  V
+;  ----------------------------------------
+; |          WAVEFORM GENERATOR            |
+; |----------------------------------------|
+; |  00 [ -- .. .. .. .. .. .. .. ] 12.5%  | (WAVE_CONFIG_DUTY)
+; |  01 [ -- -- .. .. .. .. .. .. ] 25.0%  | (WAVE_CONFIG_VOL)
+; |  10 [ -- -- -- -- .. .. .. .. ] 50.0%  |
+; |  11 [ -- -- -- -- -- -- .. .. ] 75.0%  |
+; |        0  1  2  3  4  5  6  7          |
+;  ----------------------------------------
+;  |
+;  `---> [OUT]
+;
+; WSG_CLK toggles on every underflow of the frequency divider - which advances
+; the waveform's phase after two underflows (two edges) and yields the divider
+; chain of...
+;
+; WSG_CLK = ((SYS_CLK / 2) / (DIV + 1))
+; OUT_CLK = (WSG_CLK / 16) = ((SYS_CLK / 32) / (DIV + 1))
+;
+; The waveform generator's phase cannot be reset - but it can be locked if the
+; frequency divider is reloaded faster than (WAVE_DIV * 2) cycles, this may be
+; accomplished by banging WAVE_DIV_LO, WAVE_DIV_HI, or WAVE_CONFIG.
+;
+
+.define APU_WAVE_R_DIV		$2010
+.define APU_WAVE_R_DIV_LO	$2010
+.define APU_WAVE_R_DIV_HI	$2011
+.define APU_WAVE_L_DIV		$2014
+.define APU_WAVE_L_DIV_LO	$2014
+.define APU_WAVE_L_DIV_HI	$2015
+;---------------------------------------
+; -/W
+; 11-Bit Frequency Divisor (%.....HHH LLLLLLLL)
+; ( (SYS_CLK / 32) / (DIV + 1) ) == Channel Frequency
+;
+; Writing to WAVE_DIV_LO or WAVE_DIV_HI will reload the channel's dividers.
+
+
+.define APU_WAVE_R_CONFIG	$2012
+.define APU_WAVE_L_CONFIG	$2016
+;---------------------------------------
+.define APU_WAVE_CONFIG_FORCE	%01000000
+.define APU_WAVE_CONFIG_DUTY	%00110000
+.define APU_WAVE_CONFIG_DUTY_12	%00000000
+.define APU_WAVE_CONFIG_DUTY_25	%00010000
+.define APU_WAVE_CONFIG_DUTY_50	%00100000
+.define APU_WAVE_CONFIG_DUTY_75	%00110000
+.define APU_WAVE_CONFIG_VOL	%00001111
+; -/W
+; 7 : ???
+; 6 : Force Enable (1 == Always On, 0 == Use Length Counter)
+; 5 - 4 : Duty Cycle Selection (00 == 12.5%, 01 == 25%, 10 == 50%, 11 == 75%)
+; 3 - 0 : Volume ($0 == Silent, $F == Loudest)
+;
+; Any writes with Bit 6 set reloads the channel's dividers - unless the length
+; counter is nonzero and still decrementing (see APU_WAVE_LEN below)...
+
+
+.define APU_WAVE_R_LEN		$2013
+.define APU_WAVE_L_LEN		$2017
+;---------------------------------------
+; -/W
+; Writing a value [X] here in LENGTH MODE (0 == APU_WAVE_CONFIG,6) will enable
+; the channel's output for [X] frames - after which it will silence itself.
+;
+; A single frame is 65536 clocks and appears to be aligned with the NMI tick -
+; yielding an identical rate of (4000000 / 65536) = 61.03515625 Hz.
+;
+; Bork...
+; There's lots of asterisks involved with this feature - so here's all of 'em!
+;
+; * Writing a nonzero value immediately enables the channel in LENGTH MODE for
+;   a duration between [X] and [X + 1] frames - depending upon where the write
+;   occurred within a frame (i.e. the counters are frame aligned).
+;
+; * This value is then decremented once per frame until it reaches zero - upon
+;   which the channel will be silenced IFF (0 == APU_WAVE_CONFIG,6).
+;
+; * The counters still run when (1 == APU_WAVE_CONFIG,6) but the channel won't
+;   silence itself after they reach zero and expire.
+;
+; * Writing zeroes to force a counter to expire takes effect on the next frame
+;   update - not immediately.
+;
+; * Continuously writing large nonzero values will keep the counters alive and
+;   allows software to modify both APU_WAVE_CONFIG,5-4 and APU_WAVE_CONFIG,3-0
+;   without an undesired reload of the channel's divider.
+
+
+
+
+; Audio - ADMA
+;-------------------------------------------------------------------------------
+; Supports asynchronous streaming of 4-Bit Unsigned PCM samples.
+;
+; These are formatted as two samples (a/b) in each byte %AAAABBBB - where %AAAA
+; is output first and then %BBBB. No volume control is supported but the stream
+; can be played through either or both speakers (i.e. 'dual mono').
+;
+; Sample data may be pulled from anywhere on the CBUS's address space - but the
+; region in ($8000 - $BFFF) has a special feature where APU_ADMA_CONFIG,6-4 are
+; used as an alternate 16KB Page Selection (so they're driven on B2 - B0).
+;
+;
+; During playback APU_ADMA_SRC increments after every fetch while APU_ADMA_LEN
+; will decrement after each segment (16 Bytes). Modifying the latter during an
+; active stream will overwrite the number of remaining data segments.
+;
+; The stream terminates once APU_ADMA_LEN reaches zero - upon which output is
+; silenced and the Audio DMA Complete interrupt fired (if enabled).
+;
+; Kicking off a subsequent playback request without modifying APU_ADMA_SRC or
+; APU_ADMA_LEN will perform a 4096 Byte (8192 Sample - maximum length) stream
+; with fetches continuing from where the previous stream left off.
+;
+
+.define APU_ADMA_SRC		$2018
+.define APU_ADMA_SRC_LO		$2018
+.define APU_ADMA_SRC_HI		$2019
+;---------------------------------------
+; -/W
+; PCM Data Address.
+;
+; Attempting to use VRAM ($4000 - $5FFF, on VBUS) as a streaming source will
+; cause all fetched sample data to be zeroes (silent) - or it does sometimes
+; on certain hardware... uh... basically no it doesn't work and don't do it.
+
+
+.define APU_ADMA_LEN		$201A
+;---------------------------------------
+; -/W
+; PCM Data Length in 16 Byte chunks - i.e. $08 == 128 Bytes (256 samples).
+; Setting this parameter to zero yields a maximum stream size of 4096 Bytes.
+
+
+.define APU_ADMA_CONFIG		$201B
+;---------------------------------------
+.define APU_ADMA_CONFIG_BANK	%01110000
+.define APU_ADMA_CONFIG_LR	%00001100
+.define APU_ADMA_CONFIG_C	%00001100
+.define APU_ADMA_CONFIG_L	%00001000
+.define APU_ADMA_CONFIG_R	%00000100
+.define APU_ADMA_CONFIG_DIV	%00000011
+.define APU_ADMA_CONFIG_DIV256	%00000000
+.define APU_ADMA_CONFIG_DIV512	%00000001
+.define APU_ADMA_CONFIG_DIV1K	%00000010
+.define APU_ADMA_CONFIG_DIV2K	%00000011
+; -/W
+;
+; CONFIG[1,0] | SYS_CLK / [x] | Playback Frequency
+; ------------|---------------|-------------------
+; %..00 = (0) |           256 |       15625.000 Hz
+; %..01 = (1) |           512 |        7812.500 Hz
+; %..10 = (2) |          1024 |        3906.250 Hz
+; %..11 = (3) |          2048 |        1953.125 Hz
+;
+; 7 : ???
+; 6 - 4 : 16KB Page Selection for $8000 - $BFFF
+; 3 : Output Enable (Left)
+; 2 : Output Enable (Right)
+; 1 - 0 : Divisor Selection (%00 == Highest, %11 == Lowest)
+
+
+.define APU_ADMA_REQ		$201C
+;---------------------------------------
+.define APU_ADMA_REQ_START	%10000000
+.define APU_ADMA_REQ_ABORT	%00000000
+; -/W
+; 7 : Start ADMA Playback
+; 6 - 0 : ???
+;
+; Any writes with Bit 7 set initiate ADMA playback using the current parameters
+; in APU_ADMA_CONFIG, APU_ADMA_SRC, and APU_ADMA_LEN. Once the ADMA is complete
+; SYS_STATUS,1 will raise along with its pertinent interrupt (if enabled).
+;
+; Clearing this register during an active ADMA immediately aborts its playback
+; without raising the Audio DMA Complete interrupt - i.e. writing $80,$00 in
+; that order will start and then cease streaming sample data.
+
+
+.define APU_ADMA_ACK		$2025
+;---------------------------------------
+; -R/W
+; Reading or writing acknowledges the Audio DMA Complete interrupt.
+
+
+
+
+; Audio - LFSR
+;-------------------------------------------------------------------------------
+; The LFSR is 15-Bits long and supports feedback taps using [E]^[D] or [6]^[5].
+;  _______________________________________________
+; |                                               |
+; | [E][D][C][B][A][9][8][7][6][5][4][3][2][1][0]<----.
+; |  \  \                    \  \                 |   |
+; |   ----------------------------------------||>---------> [OUT]
+; |_______________________________________________|
+;
+; 15-Bit : z -> abcdefghijklmn (o), z = n ^ o
+;  7-Bit : z -> abcdef (g), z = f ^ g
+;
+; Any write to APU_LFSR_CONFIG resets the LFSR to $7FFF (all high) - yielding a
+; first XOR result of zero.
+;
+
+.define APU_LFSR_VDIV		$2028
+;---------------------------------------
+.define APU_LFSR_VDIV_DIV	%11110000
+.define APU_LFSR_VDIV_VOL	%00001111
+; -/W
+;
+; VDIV[7...4] | SYS_CLK / [x] | LFSR Update Frequency
+; ------------|---------------|----------------------
+; %0000 = (0) |             8 |   500000.000000000 Hz
+; %0001 = (1) |            16 |   250000.000000000 Hz
+; %0010 = (2) |            32 |   125000.000000000 Hz
+; %0011 = (3) |            64 |    62500.000000000 Hz
+; %0100 = (4) |           128 |    31250.000000000 Hz
+; %0101 = (5) |           256 |    15625.000000000 Hz
+; %0110 = (6) |           512 |     7812.500000000 Hz
+; %0111 = (7) |          1024 |     3906.250000000 Hz
+; %1000 = (8) |          2048 |     1953.125000000 Hz
+; %1001 = (9) |          4096 |      976.562500000 Hz
+; %1010 = (A) |          8192 |      488.281250000 Hz
+; %1011 = (B) |         16384 |      244.140625000 Hz
+; %1100 = (C) |         32768 |      122.070312500 Hz
+; %1101 = (D) |         65536 |       61.035156250 Hz
+; %1110 = (E) |         32768 |      122.070312500 Hz
+; %1111 = (F) |         65536 |       61.035156250 Hz
+;
+; 7 - 4 : Divisor Selection ($0 == Lowest, $F == Highest)
+; 3 - 0 : Volume ($0 == Silent, $F == Loudest)
+
+
+.define APU_LFSR_LEN		$2029
+;---------------------------------------
+; -/W
+; Writing a value [X] here in LENGTH MODE (0 == APU_LFSR_CONFIG,1) will enable
+; the channel's output for [X] frames - after which it will silence itself.
+;
+; The timing specifics are nearly identical to APU_WAVE_L_LEN / APU_WAVE_R_LEN
+; excluding the priority quirk - so starting the channel using length mode and
+; then writing anything to APU_LFSR_CONFIG will reset the LFSR.
+
+
+.define APU_LFSR_CONFIG		$202A
+;---------------------------------------
+.define APU_LFSR_CONFIG_EN	%00010000
+.define APU_LFSR_CONFIG_LR	%00001100
+.define APU_LFSR_CONFIG_C	%00001100
+.define APU_LFSR_CONFIG_L	%00001000
+.define APU_LFSR_CONFIG_R	%00000100
+.define APU_LFSR_CONFIG_FORCE	%00000010
+.define APU_LFSR_CONFIG_TAP	%00000001
+.define APU_LFSR_CONFIG_TAP_15	%00000001
+.define APU_LFSR_CONFIG_TAP_7	%00000000
+; -/W
+; 7 - 5 : ???
+; 4 : LFSR Enable
+; 3 : Output Enable (Left)
+; 2 : Output Enable (Right)
+; 1 : Force Enable (1 == Always On, 0 == Use Length Counter)
+; 0 : LFSR Tap (1 == 15-Bit, 0 == 7-Bit)
+;
+; Writing any value to this register will reset the LFSR.

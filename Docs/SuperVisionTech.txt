@@ -1,0 +1,605 @@
+Supervision Technical Document
+-----------------------------
+by Peter Trauner (peter.trauner@utanet.at) 2001,2002,2003
+Stuff added by FluBBa 2004
+
+version 0.15
+ 
+The Supervision was distributed under a lot of names from a lot of firms
+
+Most games are remakes of popular games, but many
+are not so good as the originals.
+
+At least 2 variants:
+flipable with serial port
+gameboy style
+gameboy style smaller
+
+there should be a color supervision prototype
+
+Cpu W65C02S (not W65C02; does not support smb7 $87)
+clock speed of 4 MHz is a guess, but seems to be good
+
+--------------------------------------------------------------------------------
+
+Memory Area:
+------------
+0000-1fff RAM
+2000-3fff IO registers
+4000-5fff Video RAM (might be on a second bus, for nearly "concurrent" lcd dma)
+6000-7fff nothing readable!?
+8000-bfff Rom bank 0 (switchable, inited to first bank)
+c000-ffff Rom bank 1 (hardwired to the last bank in cartridge)
+
+
+IO Registers:
+-------------
+
+0x2000 - Horizontal background Size (R?/W)
+ bits 0,1 ignored
+ <0xa0 right border of lcd empty
+ >=0xc4 linesize 96?bytes
+
+0x2001 - Vertical background size (R?/W)
+ <0xa0 repeats screen from the startposition (not usable as splitscreen)
+
+0x2002 - Horizontal offset in pixel (R?/W)
+ (bits 0,1 used! bubble world)
+ (taken only when starting screen update; rest of screen ignored)
+
+0x2003 - Vertical offset in pixel (R?/W)
+screen startaddress 0x4000+[0x2002]/4+[0x2003]*0x30
+difference between 2 lines is 48 bytes (192 pixel)
+weird clipping (sssnake) on line start: if (offset>8160) offset=0
+
+0x2000 to 0x2003 mirrored at 0x2004..0x2007
+
+0x200D - ??? sensible to writes of 0xFF (R?/W)
+
+0x200E - TV Link palette? 00 normal
+ bit 0: palette on
+0x200F - TV Link something (inited to 0x80?)
+ bit 7: always 1
+ bits 6..0: ram
+
+0x2010/11/12/13 channel 0 (right on stereo jack)
+0x2014/15/16/17 channel 1 (left on stereo jack)
+
+0x2018 - Sound DMA Adrress lo (start in cartridge rom space)
+0x2019 - Sound DMA Adrress hi
+0x201A - Sound DMA length (*32 for samples?)
+0x201B - Sound DMA Ctrl 0
+ bit 0,1: speed 00 fast(16384? samples per second), 11 slow (16384/4?)
+ bit 2,3: volume 00 silent, 11 loud
+ bit 4: should be 0
+ bit 5: 0 cpu address space?; 1 cartridge address space?
+ bit 6,7: nc?
+0x201C - Sound DMA Ctrl 1
+ bit 7 dma on?
+ bit 0..6 nc?
+when finished issues dma irq request (sssnake title)
+
+0x2020 - Joypad (R/W?) (0 means button pressed)
+ bit 0: pad right
+ bit 1: pad left
+ bit 2: pad down
+ bit 3: pad up
+ bit 4: button b
+ bit 5: button a
+ bit 6: select
+ bit 7: start
+
+0x2021 - IO port read (lower 4 bits) (R)
+0x2022 - IO port write (lower 4 bits) (W)
+0x2023 - Timer value (R/W)
+ write clears Timer IRQ request?
+0x2024 - ? read might clear timer interrupt
+0x2025 - Read clears sound DMA IRQ request (R)
+
+0x2026 - LCD, IRQ & Rombank Ctrl
+ bit 0: Vblank NMI enable
+ bit 1: Timer IRQ enable
+ bit 2: Sound DMA IRQ enable
+ bit 3: LCD enable
+ bit 4: Timer restart/multiplier?
+ bit 5,6,7: Rombank 0 select
+
+0x2027 - IRQ Request (R/W?)
+ bit 0: Timer IRQ occured
+ bit 1: Sound DMA IRQ occured
+
+0x2028 - Noise Volume & Frequency
+  bit 0..3 volume (0000 off, 1111 loud
+  bit 4..7 frequency 0000 high, 1111 low 
+0x2029 - Noise timer
+  255 about 4 sec, number of frames?
+0x202A - Noise Ctrl
+  bit 0 ?
+  bit 1 always on
+  bit 2,3 volume? 00 silent, 11 loud
+  bit 4 on?
+  bit 5,6,7 nothing?
+
+  CBUS (BLITTER stuff).
+0x2038 - CBUS_LO
+0x2039 - CBUS_HI
+0x203A - X_POS
+0x203B - Y_POS
+0x203C - WIDTH
+0x203D - HEIGHT
+0x203E - MODE
+  $00 = Convert VRAM Contents to Texture in CBUS.
+  $20 - $23 = Draw {Opaque, Over, Under, XOR}.
+  $30 - $33 = Fill {Opaque, Over, Under, XOR}. Fills use the byte referenced by CBUS_LO/HI.
+0x203F - REQ
+  bit 7 start transfer
+
+0x2800 - Palette ? (R?/W)
+0x2801 - Palette ? (R?/W)
+0x2802 - Palette ? (R?/W)
+0x2803 - Palette ? (R?/W)
+
+
+
+--------------------------------------------------------------------------------
+LCD:
+----
+160x160 dots in 4 greys
+graphic byte
+ pixel color is packed in 2 bits
+ 10(left),32,54,76
+ 
+2026 bit 3: 1 lcd on
+
+
+Palette: (r,g,b) (0 means 0%, 0xff 100% full red/blue/green)
+--------
+(scanned --> too dark)
+bits:00	{ 53, 73, 42 },
+bits:01	{ 42, 64, 47 },
+bits:10	{ 22, 42, 51 },
+bits:11	{ 22, 25, 32 }
+
+
+Controls:
+---------
+2020
+(bit 0 means button pressed)
+0 pad right
+1 pad left
+2 pad down
+3 pad up
+4 button b
+5 button a
+6 select
+7 start
+
+
+NMI:
+----
+(handheld not exactly vertical lcd/timing signal! (not stable), tv link exact)
+tvlink vertical lcd area finished interupt (vertical retrace)
+handheld 61 hertz
+4000000/(256+256)=61!
+(about 61 measured, regardless if 2000+1 are inited with 0xa0 or 0xc0) 
+pal tvlink 50Hertz
+2026 bit 0 nmi on
+
+NMI timing TVLink: 
+handheld instable results (jittering)
+(switched 216e earlier version of nmi)
+2169 delay xpos switched
+216c delay not switched
+22d0 color change after 8 lines
+24a0 color change after 16 lines
+(at about 3000 handheld delay longer then nmi)
+
+IRQ:
+----
+2 sources: timer, audio dma
+2026 bit 1: timer irq on
+2026 bit 2: dma finished irq enable
+2027 bit 0: 1 means timer irq occured
+2027 bit 1: dma finished request
+
+
+Timer:
+------
+2023 timer
+ write clear interrupt?
+ 2026 bit 4 set
+  starts/restarts timer, shoots in data*16384 clocks (0 means 256)
+  measured about 240/x Hz
+ 2026 bit 4 cleared
+  starts/restarts timer, shoots in data*256 clocks (0 means 256)
+  measured about 15360/x Hz
+2024 ? read might clear timer interrupt
+
+timer shot sets irq request
+
+timing2 (timer 15360 mode: 1, count of 100 nmi)
+handheld $6400 256 per nmi
+tvlink $868d 344.45 per nmi doesn't look like tv line irq
+(note timing2 on emulator not stable!)
+
+
+Tone generators:
+----------------
+(stereo, internal only 1 speaker)
+2010/11/12/13 channel 0 (right on stereo jack of flipable Hartung)
+2014/15/16/17 channel 1 (left on stereo jack of flipable Hartung)
+model: like commodore vic20/c16 only simple timers for rectangular waveforms
+offset 0,1(bits0..2 only):
+ should be a timer delay;
+ counter=[0]|(([1]&7)<<8)
+ counter < 7 on console not hearable (offset 2:$4f)
+ f=4000000/(counter*32)
+ options.samplerate*(counter<<5)/4e6);
+offset 2: 
+ bits 3..0 volume
+ bit 4,5 effects tone frequency; waveform?
+ bit 6 permanent on
+offset 3:
+ 7..0 time (255 exproximately 4 sec); write activates tone for given time
+ timer write turns audio on; timer out off
+
+; 0c	16 
+; 0c#	17
+; 0d	18
+; 0d#	19
+; 0e	21
+; 0f	22
+; 0f#	23
+; 0g	25
+; 0g#	26
+; 0a	28
+; 0a#	29
+; 0h	31
+; 1c	33
+; 1c#	35
+; 1d	37
+; 1d#	39
+; 1e	41
+; 1f	44
+; 1f#	46
+; 1g	49
+; 1g#	52
+; 1a	55
+; 1a#	58
+; 1h	62	2047
+; 2c	65	1923
+; 2c#	69	1812
+; 2d	73	1712
+; 2d#	78	1602
+; 2e	82	1524
+; 2f	87	1437
+; 2f#	93	1344
+; 2g	98	1276
+; 2g#	104	1202
+; 2a	110	1136
+; 2a#	117	1068
+; 2h	124	1008
+; 3c	131	954
+; 3c#	139	899
+; 3d	147	850
+; 3d#	156	801
+; 3e	165	758
+; 3f	175	714
+; 3f#	185	676
+; 3g	196	635
+; 3g#	208	601
+; 3a	220	568
+; 3a#	233	536
+; 3h	247	506
+; 4c	262	477
+; 4c#	277	451
+; 4d	294	425
+; 4d#	311	402
+; 4e	330	379
+; 4f	349	358
+; 4f#	370	338
+; 4g	392	319
+; 4g#	415	301
+; 4a	440	284
+; 4a#	466	268
+; 4h	494	253
+; 5c	523	239
+; 5c#	554	226
+; 5d	587	213
+; 5d#	622	201
+; 5e	659	190
+; 5f	699	179
+; 5f#	740	169
+; 5g	784	159
+; 5g#	830	150
+; 5a	880	142
+; 5a#	932	134
+; 5h	987	127
+; 6c	1047	119
+; 6c#	1109	113
+; 6d	1175	106
+; 6d#	1245	100
+; 6e	1319	95
+; 6f	1397	90
+; 6f#	1480	84
+; 6g	1568	80
+; 6g#	1661	75
+; 6a	1760	71
+; 6a#	1865	67
+; 6h	1976	63
+; 7c	2093	60
+; 7c#	2218	56
+; 7d	2349	53
+; 7d#	2489	50
+; 7e	2637	47
+; 7f	2793	45
+; 7f#	2960	42
+; 7g	3136	40
+; 7g#	3322	38
+; 7a	3520	36
+; 7a#	3729	33
+; 7h
+
+
+Noise generator:
+----------------
+(typical white noise shift register?, random implemention yet)
+(grand prix, galaxy fighter, eagle plan, kabi island, ...)
+used as hihats,... in some melodies
+2028/29/2a noise?
+2028
+  bit 0..3 volume (0000 off, 1111 loud
+  bit 4..7 frequency 0000 high, 1111 low 
+2029 timer
+  255 about 4 sec
+202a
+  bit 0 ?
+  bit 1 always on
+  bit 2,3 volume? 00 silent, 11 loud
+  bit 4 on?
+  bit 5,6,7 nothing?
+
+
+Audio DMA:
+----------
+(sssnake, chimera, tennispro ok)
+201c: 
+ bit 7 dma on?
+ bit 0..6 nc?
+201b: 
+ bit 0,1 speed 00 fast(16384? samples per second), 11 slow (16384/4?)
+ bit 2,3 volume 00 silent, 11 loud
+ bit 4 should be 0
+ bit 5 0 cpu address space?; 1 cartridge address space?
+ bit 6,7 nc?
+201a: length (*32 for samples?)
+2018: start lo (start in cartridge rom space)
+2019: start hi
+
+when finished issues dma irq request (sssnake title)
+2025 read clears dma interrupt request
+
+sampleformat: hinibble, lownibble (unsigned)
+played on both channels
+
+
+IO Port:
+--------
+read $2021
+write $2022
+bit 0 io0 (inited to 0=0V)
+bit 1 io1 
+bit 2 io2
+bit 3 io3
+
+open drain outputs? (1 and 0 level pins connected reads 0 on both ios/pins)
+
+
+Cartridge:
+----------
+prooved on 4 types of boards from 59 known cartridges so far
+32 kbyte first half empty
+32 kbyte cartridge mirrored (some cartridges rely on mirroring of the halves)
+64 kbyte cartridge, die on cartridge
+64 kbyte cartridge, smd 27c512 eprom (connection scrambled)
+4in1 cartridge (27c020 eprom)
+ (for the handheld only 1 of the 4 64 kbyte images accessible)
+all known cartridges ignore the ca16 line
+128kbyte cartridge not found yet
+
+cartridge connector (look at the cartridge)
+picture side
+
++         *                         G G
+5 n n n n w D D D D D D D D n n n n N N
+V c c c c e 0 1 2 3 4 5 6 7 c c c c D D
+          ?                         I O
+        1 1 1 1 1 2 2 2 2 2 3 3 3 3 3 4
+2 4 6 8 0 2 4 6 8 0 2 4 6 8 0 2 4 6 8 0
+= = = = = = = = = = = = = = = = = = = =
+          1 1 1 1 1 2 2 2 2 2 3 3 3 3 3
+1 3 5 7 9 1 3 5 7 9 1 3 5 7 9 1 3 5 7 9
+                              C C C C C
+/ A A A A A A A A A A A A A A A A A A A
+C 0 1 2 3 4 5 6 7 8 9 1 1 1 1 1 1 1 1 1
+E                     0 1 2 3 4 5 6 7 8
+                                    ? ?
+
+12 *we might be r/*w
+1 is something like /A15 or /OE
+12 nc in crystball
+CA14,CA15,CA16 is controlled by supervision internal bankswitching hardware
+ 0x8000-0xbfff is bankswitched 
+  and can be mapped to 0x0000, 0x4000, 0x8000, 0xc000,
+  0x10000, 0x14000, 0x18000, 0x1c000 in the cartridge
+ 0xc000-0xffff is mapped to 0x1c000-0x1ffff (last bank) in the cartridge
+CA17,CA18 is a guess
+40 shorter pin in crystball, connected to 38
+38 or 40 gnd in?, which might be used in tvlink to be power supply
+40 gnd from internal/handheld power supply
+38 gnd to handheld electronic
+
+Special 4 in 1 cartridge
+------------------------
+reinserting cartridge/power off+on switches between games
+
+consists of a 4024 counter,
+ clock is connected to +5v
+ q1 and q2 outputs drives a16 and a17 eprom chip lines.
+
+
+Communication port:
+-------------------
+only on flipable style supervisions
+(can be rebuild on the big gameboy model)
+9 pol dsub
+looked at
+  1 2 3 4 5
+-------------
+\ o o o o o /
+ \ o o o o /
+  ---------
+   6 7 8 9
+1 red    --> io0 
+2 yellow --> io1 
+3 brown  --> io2 
+4 black  --> io3
+5 nc
+6 white gnd
+7 nc
+8 violett +5v
+9 nc
+
+pet(tron) communication adapter:
+(MESS svisionp simulation)
+1+2 output, 3+4 input
+1,3 clock lines
+2,4 data lines
+cable connection: 1+3, 2+4, 3+1, 4+2, 6+6
+hook up timer interrupt about 1920 >(8*2+16)*60
+Send 8bit data (controlport) every 2nd irq (clock edge changed bit), keep 16
+ irqs between package
+Read 8bit data (controlport) (5 irqs clock edge not changed means timeout-->restart)
+Start receiving byte only on negative edge
+(32 clocks nothing received no connection)
+delay own control port by 1 nmi
+or local delayed copy and received copy to act
+(quite simple, easy in emulation, -game not prooved)
+(simple shorting adapter possible 1+3,2+4)
+
+tv link
+-------
+"adapter" supervision tvset
+is a complete supervision, uses the handheld as "gamepad"
+comes with a cartridge which must be inserted into the handheld
+(and displays a picture on the handheld)
+game cartridges must be inserted into the tvlink.
+supervision games are displayed in white,black,blue,dark green
+tv link is capable of producing a lot of colors (frame, init of empty cartridge)
+
+crtc video resolution
+200x240 in 32 colors?
+
+3 28pin dip chips:
+2 8kbyte SRAM like standard supervision (connected to bigger die, 1 shared with
+ cartridge connector)
+1 32kbyte SRAM for crtc video (white screen when power disabled, reading problems)
+
+internal rom? on smaller die
+
+same picture as NTSC version
+small PAL graphics
+jumpers
+same board for NTSC and PAL versions (only different quartz,
+ different jumpers and HF modulator?)
+
+testings on PAL tvlink on 
+good TV (hf signal)
+bt848 tv card (hf signal, direct fbas signal)
+
+colors are always too dark
+(recardless how to adjust brightness, contrast, hue, color)
+screen looks rectangular y/x = 78/113
+
+only mono audio
+channels E3, 110, 166, 443
+200f: (init 80)
+ bit 7 always 1
+ bits 6..0 ram
+2800-3f ram
+ (init 282a df else ff)
+
+tvlink adapter program writes controls to $0040!
+palette grabbed from pal tvlink video port (not hf signal
+    { 1, 1, 3 },
+    { 5, 18, 9 }, // dark green
+    { 48, 76, 100 }, blue
+    { 190, 190, 190 }
+
+kabi island sachen scroller on tv link "colored" and "shadows"
+happy pair doesn't sound ok on tv link too
+
+Horizontal clipping difference:
+untouched right area colored after init
+dirt on right side (line, ...)
+
+Vertical clipping difference:
+not repeated,
+looks more like x size is zero (right border immediately after left)
+
+timing 5min measurement: nmi:3b0b counter:0dd0
+(--> nmi 50Hz, Clock 17.734475/4 (10% higher))
+(--> some gameplay, melodies 16% slower)
+(--> most likely audio tones 10% higher)
+
+hartung (germany) supervision handheld:
+timing 5min measurement: nmi:4778 counter:0c60
+
+ntsc from screenshots:
+ratio y/x = 100/118
+clock ntsc ? 3.54MHz
+nmi 60Hz?
+
+colors
+0,0,0? // black
+188,242,244 // light cyan (a lot darker)
+129,204,255 // light blue
+245,249,248 // white
+
+
+2004-7 mirror of 2000-2003 linesize reduced
+200e 00 normal
+ bit 0 palette on
+203f strange (ff written vertical line appeared,
+ $ff written vertical line vanished)
+
+in several registers appears another value
+unfortunately colors sometimes overwritten!
+(incomplete)
+(if 2802 $38, 2803 $07)
+2800 00 color
+ writing:
+ bit 0 --> bit 0
+ bit 1 or 2803.1 --> bit 1
+ bit 2 or 2803.2 --> bit 2
+ bit 3 --> bit 3
+ bit 4 ignored? (1)
+ bit 5 --> bit 5
+ bit 6 --> bit 6
+ bit 7 --> bit 7
+2801 01 color
+ writing:
+ write and 2802.3 set 2800.3
+ bit 0 or 2800.0 or 2803.0 --> bit 0
+ bit 1 or 2803.3 --> bit 1
+ bit 2 ignored (1)
+ bit 3 ignored (1) (set after awhile)
+ bit 4 ignored (1)
+ bit 5 or 2800.3 --> bit 5
+ bit 6 --> bit 6 (set sets 2800.6)
+ bit 7 or 2800.7 --> bit 7 (set sets 2800.7)
+2802 10 color 
+2803 11 color
+ bits 2..0 red
+ bits 5..3 green
+ bits ?76 blue

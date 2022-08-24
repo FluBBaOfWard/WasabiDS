@@ -7,10 +7,6 @@ extern "C" {
 
 extern u32 joyCfg;
 extern u32 EMUinput;
-extern u32 batteryLevel;
-extern u8 wsEepromMem[0x80];
-extern u8 wscEepromMem[0x800];
-extern u8 scEepromMem[0x800];
 
 /**
  * Saves the state of io to the destination.
@@ -31,12 +27,6 @@ int ioLoadState(const void *source);
  * @return The size of the state.
  */
 int ioGetStateSize(void);
-
-/// Initializes internal EEPROM.
-void initIntEeprom(void *eepromAdr);
-
-/// Initializes internal EEPROM on Color consoles.
-void initIntEepromColor(void *eepromAdr);
 
 #ifdef __cplusplus
 } // extern "C"

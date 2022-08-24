@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include "Sphinx/Sphinx.h"
+#include "KS5360/SVVideo.h"
 
 extern u8 gFlicker;
 extern u8 gTwitch;
@@ -26,9 +26,6 @@ void updateLCDRefresh(void);
 void refreshGfx(void);
 u8 v30ReadPort(u16 port);
 void v30WritePort(u16 port, u8 value);
-
-void setHeadphones(bool enable);
-void setLowBattery(bool enable);
 
 #ifdef __cplusplus
 } // extern "C"

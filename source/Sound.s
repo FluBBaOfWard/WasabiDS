@@ -1,6 +1,6 @@
 #ifdef __arm__
 
-#include "Sphinx/Sphinx.i"
+#include "KS5360/SVVideo.i"
 
 	.global soundInit
 	.global soundReset
@@ -31,7 +31,7 @@ soundReset:
 	stmfd sp!,{lr}
 	mov r0,#0
 	ldr spxptr,=sphinx0
-	bl wsAudioReset			;@ sound
+//	bl wsAudioReset			;@ sound
 	ldmfd sp!,{lr}
 	bx lr
 
@@ -58,7 +58,7 @@ VblSound2:					;@ r0=length, r1=pointer
 
 	ldr spxptr,=sphinx0
 //	mov r0,r0,lsl#2
-	bl wsAudioMixer
+//	bl wsAudioMixer
 	ldmfd sp!,{r0,r1,lr}
 	bx lr
 

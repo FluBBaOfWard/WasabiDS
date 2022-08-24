@@ -1,3 +1,6 @@
 [submodule "source/Shared"]
 	path = source/Shared
 	url = https://github.com/FluBBaOfWard/NDS_Shared.git
+[submodule "source/ARM6502"]
+	path = source/ARM6502
+	url = https://github.com/FluBBaOfWard/ARM6502.git

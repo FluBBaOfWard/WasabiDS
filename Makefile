@@ -6,10 +6,10 @@ ifeq ($(strip $(DEVKITARM)),)
 $(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
 endif
 
-GAME_TITLE		:=	NitroSwan
-GAME_SUBTITLE1	:=	WonderSwan Emulator
+GAME_TITLE		:=	WasabiDS
+GAME_SUBTITLE1	:=	Watara Supervision Emulator
 GAME_SUBTITLE2	:=	www.ndsretro.com
-GAME_ICON		:=	$(CURDIR)/../WSLogo.bmp
+GAME_ICON		:=	$(CURDIR)/../WSVLogo.bmp
 
 include $(DEVKITARM)/ds_rules
 
@@ -27,11 +27,8 @@ BUILD		:=	build
 SOURCES		:=	source	\
 				source/Shared \
 				source/Shared/Unzip \
-				source/ARMV30MZ \
-				source/Sphinx \
-				source/WSEEPROM \
-				source/WSRTC \
-				source/WSAudio
+				source/ARM6502 \
+				source/KS5360
 DATA		:=	data
 INCLUDES	:=	include
 GRAPHICS	:=	source/Shared/graphics \
@@ -41,7 +38,7 @@ GRAPHICS	:=	source/Shared/graphics \
 # options for code generation
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv5te -mtune=arm946e-s -mthumb -mthumb-interwork
-FLAGS	:=	-DARM9 -DNDS
+FLAGS	:=	-DARM9 -DNDS -DM65C02
 
 ifeq ($(DEBUG),1)
 	CFLAGS	:=	-gdwarf-2 -Wall -ffast-math $(ARCH)

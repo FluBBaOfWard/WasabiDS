@@ -1,18 +1,12 @@
-NitroSwan Todo
+WasabiDS Todo
 
-	Add different read mem functions.
 	Fix better sound!
 	Graphics on menu screen?
 	Find speed hacks.
 	Better key mappings.
-	Add IO word access?
-	Add serial port emulation.
-	SD Gundam Operation U.C pauses like hitting start, but with a message about low battery.
-	Link NDS battery to WS battery?
-	Sprite priority can't be fixed.
 
 GFX:
-	See Sphinx todo.
+	See SVVideo todo.
 
 GUI:
 	Eng/Jap: "Digimon Tamers - Battle Spirit" has jumper on the cart.
@@ -20,80 +14,32 @@ GUI:
 Mem:
 
 CPU:
-	See ARMV30MZ Todo.
+	See ARM6502 Todo.
 
 Sound:
 	See Sphinx todo.
 
 Misc:
 	Cardcaptor Sakura, timing sensitive.
-	Mr. Driller, also sensitive to timing (fetch opcode, pl vs gt).
-	Nazo Ou Pocket, slow.
-	Side Pocket, slow.
-	Time Bokan Series, slow.
 
 Games Not Working:
 	Kurupara, crashes. Crashes because of LineCompareIRQ on line 0.
-	Ultraman, division by zero crash. If watching the whole intro before starting.
 Games Not Working Fixed:
 	Bakusou Dekotora Densetsu. Unzip craps out. Fixed
-	Chou Denki Card Game. Needs initialization, last item on first page.
-	Hanjuku Hero, crashes. Reads mapper register 0xC0 which was not reset correctly.
-	Riviera freezes on a black screen after the chapter 1 screen. Fixed in V0.4.0.
-	Tonpuusou. Can't start. HBlank interrupt.
-	Xi Little. Can't start. Waiting on sample playing. Fixed.
 
 Games With Glitches:
 	Makai Toushi Sa-Ga, textboxes overlap Characters and background.
-	Sorobang, needs all 1024 tiles in 4color mode.
-	WonderSwanColor BIOS, needs all 1024 tiles in 4color mode.
 Games With Glitches Fixed:
 	Magical Drop, playfield flickers horizontaly. Sensitive to interrupt (and IRET, HALT) timing.
 		* Fix: Sprite DMA consumes cycles.
-	Final Fantasy. Characters when inputing name can glitch.
-		* Depending on which scan line VBlank is and how many total scan lines.
 
 Needs Large (256kB) SRAM:
 	Dicing Knight.
-	Judgement Silversword Rebirth Edition
-	Tenori-On
 
 Needs RTC:
 	Dicing Knight.
-	Dokodemo Hamster 3 - O Dekake Saffron
-	Inu yasha
-	Judgement Silversword Rebirth Edition
-	Tenori-On
 
 Speedhacks:
 	Halt (0xf4).
 	* Bakusou Dekotora Densetsu.
-	* Chocobo no Fushigi na Dungeon for WonderSwan
 	* Chou Aniki - Otoko no Tamafuda
-	* Engacho for WonderSwan
-	* Flash Koibito-kun
-	* Ganso Jajamaru-kun
-	* Goraku Ou Tango!
-	* GunPey
-	* GunPey EX
-	* Harobots
-	* Kaze no Klonoa - Moonlight Museum
-	* Kinnikuman Ilsei - Dream Tag Match
-	* Langrisser Millennium WS - The Last Century
-	* Magical Drop for WonderSwan
-	* Medarot Perfect Edition
-	* Moero!! Pro Yakyuu Rookies
-	* Mr. Driller
-	* Robot Works
-	* Rockman & Forte - Mirai Kara no Chousensha
-	* Saint Seya - Ougon Densetsu - Perfect Edition
-	* Sennou Millennium
-	* Shin Nippon Pro Wrestling Toukon Retsuden
-	* Super Robot Taisen Compact
-	* Tare Panda no GunPey
-	* Wonder Stadium '99
-	* Wonder Stadium
-	* WonderSwan Handy Sonar
-	* Zakull Bootsplash
-
-	"Guilty Gear Petit"		- JR (0x72,0xF9) @0x2002

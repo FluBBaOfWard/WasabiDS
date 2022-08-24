@@ -1,24 +1,17 @@
 #ifdef __arm__
 
 #include "Shared/nds_asm.h"
-#include "ARMV30MZ/ARMV30MZ.i"
-#include "ARMV30MZ/ARMV30MZmac.h"
-#include "Sphinx/Sphinx.i"
+#include "ARM6502/M6502mac.h"
+#include "KS5360/SVVideo.i"
 
-#define CYCLE_PSL (256)
+#define CYCLE_PSL (96)
 
 	.global run
-	.global stepFrame
 	.global cpuInit
 	.global cpuReset
-	.global isConsoleRunning
-	.global isConsoleSleeping
-	.global tweakCpuSpeed
 	.global frameTotal
 	.global waitMaskIn
 	.global waitMaskOut
-	.global cpu1SetIRQ
-	.global tlcs_return
 
 	.syntax unified
 	.arm
@@ -46,8 +39,7 @@ runStart:
 	and r3,r3,r0
 	str r0,joyClick
 
-	tst r3,#0x04				;@ NDS Select?
-	blne pushVolumeButton
+//	tst r3,#0x04				;@ NDS Select?
 //	tsteq r3,#0x800				;@ NDS Y?
 //	ldrne r2,=systemMemory+0xB3
 //	ldrbne r2,[r2]
@@ -58,22 +50,23 @@ runStart:
 
 	bl refreshEMUjoypads		;@ Z=1 if communication ok
 skipInput:
-	ldr v30ptr,=V30OpTable
-	add r1,v30ptr,#v30Flags
-	ldmia r1,{v30f-v30cyc}		;@ Restore V30MZ state
+	ldr m6502optbl,=m6502OpTable
+	add r1,m6502optbl,#m6502Regs
+	ldmia r1,{m6502nz-m6502pc,m6502zpage}	;@ Restore M6502 state
 ;@----------------------------------------------------------------------------
-wsFrameLoop:
+svFrameLoop:
 ;@----------------------------------------------------------------------------
 	mov r0,#CYCLE_PSL
-	bl V30RunXCycles
+	b m6502RunXCycles
+svM6502End:
 	ldr spxptr,=sphinx0
-	bl wsvDoScanline
+	bl svDoScanline
 	cmp r0,#0
-	bne wsFrameLoop
+	bne svFrameLoop
 
 ;@----------------------------------------------------------------------------
-	add r0,v30ptr,#v30Flags
-	stmia r0,{v30f-v30cyc}		;@ Save V30MZ state
+	add r0,m6502optbl,#m6502Regs
+	stmia r0,{m6502nz-m6502pc,m6502zpage}	;@ Save M6502 state
 	ldr r1,=fpsValue
 	ldr r0,[r1]
 	add r0,r0,#1
@@ -92,7 +85,7 @@ wsFrameLoop:
 	b runStart
 
 ;@----------------------------------------------------------------------------
-v30MZCyclesPerScanline:	.long 0
+m6502CyclesPerScanline:	.long 0
 joyClick:			.long 0
 frameTotal:			.long 0		;@ Let ui.c see frame count for savestates
 waitCountIn:		.byte 0
@@ -101,62 +94,33 @@ waitCountOut:		.byte 0
 waitMaskOut:		.byte 0
 
 ;@----------------------------------------------------------------------------
-stepFrame:		;@ Return after 1 frame
-	.type stepFrame STT_FUNC
-;@----------------------------------------------------------------------------
-	stmfd sp!,{r4-r11,lr}
-	ldr v30ptr,=V30OpTable
-	add r1,v30ptr,#v30Flags
-	ldmia r1,{v30f-v30cyc}		;@ Restore V30MZ state
-;@----------------------------------------------------------------------------
-wsFrameLoop2:
-;@----------------------------------------------------------------------------
-	mov r0,#CYCLE_PSL
-	bl V30RunXCycles
-	ldr spxptr,=sphinx0
-	bl wsvDoScanline
-	cmp r0,#0
-	bne wsFrameLoop2
-
-	mov r0,#CYCLE_PSL
-	bl V30RunXCycles
-	ldr spxptr,=sphinx0
-	bl wsvDoScanline
-;@----------------------------------------------------------------------------
-	add r0,v30ptr,#v30Flags
-	stmia r0,{v30f-v30cyc}		;@ Save V30MZ state
-
-	ldr r1,frameTotal
-	add r1,r1,#1
-	str r1,frameTotal
-
-	ldmfd sp!,{r4-r11,lr}
-	bx lr
-;@----------------------------------------------------------------------------
 cpuInit:					;@ Called by machineInit
 ;@----------------------------------------------------------------------------
-	stmfd sp!,{v30ptr,lr}
-	ldr v30ptr,=V30OpTable
+	stmfd sp!,{m6502optbl,lr}
+	ldr m6502optbl,=m6502OpTable
 
 	mov r0,#CYCLE_PSL
-	str r0,v30MZCyclesPerScanline
-	mov r0,v30ptr
-	bl V30Init
+	str r0,m6502CyclesPerScanline
+//	mov r0,m6502optbl
+//	bl V30Init
 
-	ldmfd sp!,{v30ptr,lr}
+	ldmfd sp!,{m6502optbl,lr}
 	bx lr
 ;@----------------------------------------------------------------------------
 cpuReset:					;@ Called by loadCart/resetGame
 ;@----------------------------------------------------------------------------
-	stmfd sp!,{v30ptr,lr}
-	ldr v30ptr,=V30OpTable
+	stmfd sp!,{m6502optbl,lr}
+	ldr m6502optbl,=m6502OpTable
 
-	mov r0,v30ptr
-	bl V30Reset
-	ldr r0,=getInterruptVector
-	str r0,[v30ptr,#v30IrqVectorFunc]
+	adr r0,svM6502End
+	str r0,[m6502optbl,#m6502NextTimeout]
+	str r0,[m6502optbl,#m6502NextTimeout_]
 
-	ldmfd sp!,{v30ptr,lr}
+	mov r0,m6502optbl
+	mov r0,#0
+	bl m6502Reset
+
+	ldmfd sp!,{m6502optbl,lr}
 	bx lr
 ;@----------------------------------------------------------------------------
 	.end

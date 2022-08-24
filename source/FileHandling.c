@@ -20,13 +20,10 @@
 #include "Gfx.h"
 #include "io.h"
 #include "Memory.h"
-#include "WonderSwan.h"
+#include "Supervision.h"
 
 static const char *const folderName = "nitroswan";
 static const char *const settingName = "settings.cfg";
-static const char *const wsEepromName = "wsinternal.eeprom";
-static const char *const wscEepromName = "wscinternal.eeprom";
-static const char *const scEepromName = "scinternal.eeprom";
 
 ConfigData cfg;
 
@@ -82,7 +79,7 @@ int initSettings() {
 	return 0;
 }
 
-bool updateSettingsFromWS() {
+bool updateSettingsFromSV() {
 	int val = 0;
 	bool changed = false;
 
@@ -166,7 +163,6 @@ void saveSettings() {
 		infoOutput("Couldn't open file:");
 		infoOutput(settingName);
 	}
-	saveIntEeproms();
 }
 
 //void loadSaveGameFile()
@@ -179,13 +175,8 @@ void loadNVRAM() {
 	strlcpy(nvramName, currentFilename, sizeof(nvramName));
 	if (sramSize > 0) {
 		saveSize = sramSize;
-		nvMem = wsSRAM;
+		nvMem = svSRAM;
 		setFileExtension(nvramName, ".ram", sizeof(nvramName));
-	}
-	else if (eepromSize > 0) {
-		saveSize = eepromSize;
-		nvMem = extEepromMem;
-		setFileExtension(nvramName, ".eeprom", sizeof(nvramName));
 	}
 	else {
 		return;
@@ -218,13 +209,8 @@ void saveNVRAM() {
 	strlcpy(nvramName, currentFilename, sizeof(nvramName));
 	if (sramSize > 0) {
 		saveSize = sramSize;
-		nvMem = wsSRAM;
+		nvMem = svSRAM;
 		setFileExtension(nvramName, ".ram", sizeof(nvramName));
-	}
-	else if (eepromSize > 0) {
-		saveSize = eepromSize;
-		nvMem = extEepromMem;
-		setFileExtension(nvramName, ".eeprom", sizeof(nvramName));
 	}
 	else {
 		return;
@@ -300,104 +286,6 @@ void saveState() {
 }
 
 //---------------------------------------------------------------------------------
-int loadIntEeprom(const char *name, u8 *dest, int size) {
-	FILE *file;
-	if ( (file = fopen(name, "r")) ) {
-		fread(dest, 1, size, file);
-		fclose(file);
-	}
-	else {
-		initIntEeprom(dest);
-		infoOutput("Couldn't open file:");
-		infoOutput(name);
-		return 1;
-	}
-	infoOutput("Internal EEPROM loaded.");
-	return 0;
-}
-
-int saveIntEeprom(const char *name, u8 *source, int size) {
-	FILE *file;
-	if ( (file = fopen(name, "w")) ) {
-		fwrite(source, 1, size, file);
-		fclose(file);
-	}
-	else {
-		infoOutput("Couldn't open file:");
-		infoOutput(name);
-		return 1;
-	}
-	infoOutput("Internal EEPROM saved.");
-	return 0;
-}
-
-static void clearIntEepromWS() {
-	memset(wsEepromMem, 0, sizeof(wsEepromMem));
-	initIntEeprom(wsEepromMem);
-}
-static void clearIntEepromWSC() {
-	memset(wscEepromMem, 0, sizeof(wscEepromMem));
-	initIntEepromColor(wscEepromMem);
-}
-static void clearIntEepromSC() {
-	memset(scEepromMem, 0, sizeof(scEepromMem));
-	initIntEepromColor(scEepromMem);
-}
-
-int loadIntEeproms() {
-	int status = 1;
-	clearIntEepromWS();
-	clearIntEepromWSC();
-	clearIntEepromSC();
-	if (!findFolder(folderName)) {
-		status = loadIntEeprom(wsEepromName, wsEepromMem, sizeof(wsEepromMem));
-		status |= loadIntEeprom(wscEepromName, wscEepromMem, sizeof(wscEepromMem));
-		status |= loadIntEeprom(scEepromName, scEepromMem, sizeof(scEepromMem));
-	}
-	return status;
-}
-
-int saveIntEeproms() {
-	int status = 1;
-	if (!findFolder(folderName)) {
-		switch (gSOC) {
-			case SOC_ASWAN:
-				status = saveIntEeprom(wsEepromName, wsEepromMem, sizeof(wsEepromMem));
-				break;
-			case SOC_SPHINX:
-				status = saveIntEeprom(wscEepromName, wscEepromMem, sizeof(wscEepromMem));
-				break;
-			case SOC_SPHINX2:
-				status = saveIntEeprom(scEepromName, scEepromMem, sizeof(scEepromMem));
-				break;
-		}
-	}
-	return status;
-}
-
-void selectEEPROM() {
-	pauseEmulation = true;
-//	setSelectedMenu(9);
-	const char *eepromName = browseForFileType(".eeprom");
-	cls(0);
-	loadIntEeprom(eepromName, wscEepromMem, sizeof(wscEepromMem));
-}
-
-void clearIntEeproms() {
-	switch (gSOC) {
-		case SOC_ASWAN:
-			clearIntEepromWS();
-			break;
-		case SOC_SPHINX:
-			clearIntEepromWSC();
-			break;
-		case SOC_SPHINX2:
-			clearIntEepromSC();
-			break;
-	}
-}
-
-//---------------------------------------------------------------------------------
 bool loadGame(const char *gameName) {
 	if ( gameName ) {
 		cls(0);
@@ -435,13 +323,10 @@ void checkMachine() {
 	if ( gMachineSet == HW_AUTO ) {
 		getFileExtension(fileExt, currentFilename);
 		if ( romSpacePtr[gRomSize - 9] != 0 || strstr(fileExt, ".wsc") ) {
-			gMachine = HW_WONDERSWANCOLOR;
-		}
-		else if ( strstr(fileExt, ".pc2") ) {
-			gMachine = HW_POCKETCHALLENGEV2;
+			gMachine = HW_SUPERVISIONCOLOR;
 		}
 		else {
-			gMachine = HW_WONDERSWAN;
+			gMachine = HW_SUPERVISION;
 		}
 	}
 	else {
@@ -492,15 +377,6 @@ int loadColorBIOS(void) {
 	return 0;
 }
 
-int loadCrystalBIOS(void) {
-	if ( loadBIOS(biosSpaceCrystal, cfg.crystalBiosPath, sizeof(biosSpaceCrystal)) ) {
-		g_BIOSBASE_CRYSTAL = biosSpaceCrystal;
-		return 1;
-	}
-	g_BIOSBASE_CRYSTAL = NULL;
-	return 0;
-}
-
 static bool selectBios(char *dest, const char *fileTypes) {
 	const char *biosName = browseForFileType(fileTypes);
 
@@ -523,13 +399,6 @@ void selectBnWBios() {
 void selectColorBios() {
 	if ( selectBios(cfg.colorBiosPath, ".ws.wsc.rom.zip") ) {
 		loadColorBIOS();
-	}
-	cls(0);
-}
-
-void selectCrystalBios() {
-	if ( selectBios(cfg.crystalBiosPath, ".ws.wsc.rom.zip") ) {
-		loadCrystalBIOS();
 	}
 	cls(0);
 }

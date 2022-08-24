@@ -1,7 +1,7 @@
 #ifdef __arm__
 
 #include "Shared/nds_asm.h"
-#include "Sphinx/Sphinx.i"
+#include "KS5360/SVVideo.i"
 
 	.global gfxInit
 	.global gfxReset
@@ -10,9 +10,6 @@
 	.global paletteTxAll
 	.global refreshGfx
 	.global endFrameGfx
-	.global pushVolumeButton
-	.global setHeadphones
-	.global setLowBattery
 	.global updateLCDRefresh
 	.global setScreenRefresh
 	.global getInterruptVector
@@ -49,7 +46,7 @@ gfxInit:					;@ Called from machineInit
 	mov r2,#0x100
 	bl memset_
 
-	bl wsVideoInit
+	bl svVideoInit
 	bl gfxWinInit
 
 	ldmfd sp!,{pc}
@@ -65,12 +62,12 @@ gfxReset:					;@ Called with CPU reset
 
 	bl gfxWinInit
 
-	ldr r0,=V30SetIRQPin
+	ldr r0,=m6502SetIRQPin
 	mov r1,#0
-	ldr r2,=wsRAM
+	ldr r2,=svRAM
 	ldr r3,=gSOC
 	ldrb r3,[r3]
-	bl wsVideoReset0
+	bl svVideoReset0
 	bl monoPalInit
 
 	ldr r0,=gGammaValue
@@ -78,15 +75,7 @@ gfxReset:					;@ Called with CPU reset
 	bl paletteInit				;@ Do palette mapping
 	bl paletteTxAll				;@ Transfer it
 
-	ldr r0,=cartOrientation
 	ldr spxptr,=sphinx0
-	ldrb r0,[r0]
-	strb r0,[spxptr,#wsvOrientation]
-
-	ldr r0,=emuSettings
-	ldr r0,[r0]
-	and r0,r0,#1<<18
-	bl setHeadphones
 
 	ldmfd sp!,{pc}
 
@@ -209,7 +198,7 @@ paletteTx:					;@ r0=destination, spxptr=Sphinx
 	ands r7,r7,#0xC0			;@ Color mode?
 	beq bnwTx
 
-	ldr r4,=wsRAM+0xFE00
+	ldr r4,=svRAM+0xFE00
 	mov r3,r3,lsl#1
 	ldrh r3,[r4,r3]
 	and r3,r2,r3,lsl#1
@@ -313,7 +302,7 @@ updateLCDRefresh:
 ;@----------------------------------------------------------------------------
 	adr spxptr,sphinx0
 	ldrb r1,[spxptr,#wsvTotalLines]
-	b wsvRefW
+	b svRefW
 ;@----------------------------------------------------------------------------
 setScreenRefresh:			;@ r0 in = WS scan line count.
 	.type setScreenRefresh STT_FUNC
@@ -435,9 +424,9 @@ exit75Hz:
 	ldrb r0,frameDone
 	cmp r0,#0
 	beq nothingNew
-//	bl wsvConvertTiles
+//	bl svConvertTiles
 	mov r0,#BG_GFX
-	bl wsvConvertTileMaps
+	bl svConvertTileMaps
 	mov r0,#0
 	strb r0,frameDone
 nothingNew:
@@ -459,7 +448,7 @@ endFrameGfx:				;@ Called just before screen end (~line 143)	(r0-r3 safe to use)
 	ldr r0,tmpScroll			;@ Destination
 	bl copyScrollValues
 	ldr r0,tmpOamBuffer			;@ Destination
-	bl wsvConvertSprites
+	bl svConvertSprites
 	bl paletteTxAll
 ;@--------------------------
 
@@ -475,7 +464,6 @@ endFrameGfx:				;@ Called just before screen end (~line 143)	(r0-r3 safe to use)
 
 	mov r0,#1
 	strb r0,frameDone
-	bl updateSlowIO				;@ RTC/Alarm and more
 
 	ldmfd sp!,{lr}
 	bx lr
@@ -497,49 +485,27 @@ gGfxMask:		.byte 0
 frameDone:		.byte 0
 				.byte 0,0
 ;@----------------------------------------------------------------------------
-wsVideoReset0:		;@ r0=periodicIrqFunc, r1=, r2=frame2IrqFunc, r3=model
+svVideoReset0:		;@ r0=periodicIrqFunc, r1=, r2=frame2IrqFunc, r3=model
 ;@----------------------------------------------------------------------------
 	adr spxptr,sphinx0
-	b wsVideoReset
+	b svVideoReset
 ;@----------------------------------------------------------------------------
 v30ReadPort:
 	.type v30ReadPort STT_FUNC
 ;@----------------------------------------------------------------------------
 	adr spxptr,sphinx0
-	b wsvRead
+	b svRead
 ;@----------------------------------------------------------------------------
 v30WritePort:
 	.type v30WritePort STT_FUNC
 ;@----------------------------------------------------------------------------
 	adr spxptr,sphinx0
-	b wsvWrite
-;@----------------------------------------------------------------------------
-pushVolumeButton:
-;@----------------------------------------------------------------------------
-	adr spxptr,sphinx0
-	b wsvPushVolumeButton
-;@----------------------------------------------------------------------------
-setHeadphones:				;@ r0 = on/off
-	.type setHeadphones STT_FUNC
-;@----------------------------------------------------------------------------
-	adr spxptr,sphinx0
-	b wsvSetHeadphones
-;@----------------------------------------------------------------------------
-setLowBattery:				;@ r0 = on/off
-	.type setLowBattery STT_FUNC
-;@----------------------------------------------------------------------------
-	adr spxptr,sphinx0
-	b wsvSetLowBattery
-;@----------------------------------------------------------------------------
-getInterruptVector:
-;@----------------------------------------------------------------------------
-	adr spxptr,sphinx0
-	b wsvGetInterruptVector
+	b svWrite
 ;@----------------------------------------------------------------------------
 setInterruptExternal:		;@ r0=irq state
 ;@----------------------------------------------------------------------------
 	adr spxptr,sphinx0
-	b wsvSetInterruptExternal
+	b svSetInterruptExternal
 sphinx0:
 	.space sphinxSize
 ;@----------------------------------------------------------------------------
