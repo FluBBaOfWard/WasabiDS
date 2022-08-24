@@ -1,0 +1,7 @@
+build
+include/roms
+*.elf
+*.nds
+*.zip
+WasabiDS.xcodeproj/xcuserdata
+WasabiDS.xcodeproj/project.xcworkspace/xcuserdata

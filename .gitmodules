@@ -1,0 +1,3 @@
+[submodule "source/Shared"]
+	path = source/Shared
+	url = https://github.com/FluBBaOfWard/NDS_Shared.git
