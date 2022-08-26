@@ -238,7 +238,7 @@ int svVideoGetStateSize(void);
 
 void svDoScanline(void);
 void svConvertTileMaps(void *destination);
-void svConvertSprites(void *destination);
+void svConvertScreen(void *destination);
 void svConvertTiles(void);
 
 #ifdef __cplusplus

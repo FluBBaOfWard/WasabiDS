@@ -424,9 +424,8 @@ exit75Hz:
 	ldrb r0,frameDone
 	cmp r0,#0
 	beq nothingNew
-//	bl svConvertTiles
-	mov r0,#BG_GFX
-	bl svConvertTileMaps
+	ldr r0,=BG_GFX+0x8000
+	bl svConvertScreen
 	mov r0,#0
 	strb r0,frameDone
 nothingNew:
@@ -447,8 +446,6 @@ endFrameGfx:				;@ Called just before screen end (~line 143)	(r0-r3 safe to use)
 
 	ldr r0,tmpScroll			;@ Destination
 	bl copyScrollValues
-	ldr r0,tmpOamBuffer			;@ Destination
-	bl svConvertSprites
 	bl paletteTxAll
 ;@--------------------------
 

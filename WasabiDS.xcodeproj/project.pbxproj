@@ -13,9 +13,6 @@
 		9C175BDC28B62EB800293DA7 /* WasabiDS_todo.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = WasabiDS_todo.txt; sourceTree = "<group>"; };
 		9C175BDD28B6310B00293DA7 /* SVBorder.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = SVBorder.png; sourceTree = "<group>"; };
 		9C175BDE28B6310B00293DA7 /* SVBorder.grit */ = {isa = PBXFileReference; lastKnownFileType = text; path = SVBorder.grit; sourceTree = "<group>"; };
-		9C175BE028B6326C00293DA7 /* 65c02s.s */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = 65c02s.s; sourceTree = "<group>"; };
-		9C175BE128B6326C00293DA7 /* 65c02s.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = 65c02s.h; sourceTree = "<group>"; };
-		9C175BE228B6326C00293DA7 /* 65c02smac.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = 65c02smac.h; sourceTree = "<group>"; };
 		9C175BE428B635EF00293DA7 /* Version.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Version.h; sourceTree = "<group>"; };
 		9C175BE528B635EF00293DA7 /* ARM6502_todo.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = ARM6502_todo.txt; sourceTree = "<group>"; };
 		9C175BE628B635EF00293DA7 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -110,16 +107,6 @@
 			name = makefile;
 			sourceTree = "<group>";
 		};
-		9C175BDF28B6326C00293DA7 /* ARM65C02 */ = {
-			isa = PBXGroup;
-			children = (
-				9C175BE128B6326C00293DA7 /* 65c02s.h */,
-				9C175BE228B6326C00293DA7 /* 65c02smac.h */,
-				9C175BE028B6326C00293DA7 /* 65c02s.s */,
-			);
-			path = ARM65C02;
-			sourceTree = "<group>";
-		};
 		9C175BE328B635EF00293DA7 /* ARM6502 */ = {
 			isa = PBXGroup;
 			children = (
@@ -192,7 +179,6 @@
 			isa = PBXGroup;
 			children = (
 				9C175BE328B635EF00293DA7 /* ARM6502 */,
-				9C175BDF28B6326C00293DA7 /* ARM65C02 */,
 				9C175BEE28B63D1800293DA7 /* KS5360 */,
 				A47F092A20863AF5004E1DA6 /* Shared */,
 				9CC013FC2668FDD9005714F7 /* Emubase.h */,

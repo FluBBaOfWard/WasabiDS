@@ -21,17 +21,13 @@
 	.global biosBase
 	.global biosSpace
 	.global biosSpaceColor
-	.global biosSpaceCrystal
 	.global g_BIOSBASE_BNW
 	.global g_BIOSBASE_COLOR
 	.global svRAM
 	.global svVRAM
 	.global DIRTYTILES
 	.global svSRAM
-	.global extEeprom
-	.global extEepromMem
 	.global sramSize
-	.global eepromSize
 	.global gRomSize
 	.global maxRomSize
 	.global romMask
@@ -43,23 +39,6 @@
 	.global gLang
 	.global gPaletteBank
 
-	.global extEepromDataLowR
-	.global extEepromDataHighR
-	.global extEepromAdrLowR
-	.global extEepromAdrHighR
-	.global extEepromStatusR
-	.global extEepromDataLowW
-	.global extEepromDataHighW
-	.global extEepromAdrLowW
-	.global extEepromAdrHighW
-	.global extEepromCommandW
-
-	.global cartRtcStatusR
-	.global cartRtcCommandW
-	.global cartRtcDataR
-	.global cartRtcDataW
-	.global cartRtcUpdate
-
 	.syntax unified
 	.arm
 
@@ -67,11 +46,9 @@
 	.align 2
 
 ROM_Space:
-//	.incbin "roms/Alien.sv"
+	.incbin "roms/Alien.sv"
 //	.incbin "roms/Happy Pairs (1992) (Sachen).sv"
 //	.incbin "roms/Jaguar Bomber (1992) (Bon Treasure).sv"
-//	.incbin "roms/Dicing Knight. (J).sv"
-//	.incbin "roms/XI Little (Japan).sv"
 ROM_SpaceEnd:
 WS_BIOS_INTERNAL:
 //	.incbin "wsroms/boot.rom"
@@ -89,13 +66,14 @@ machineInit: 	;@ Called from C
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{r4-r11,lr}
 
-//	ldr r0,=romSize
-//	mov r1,#ROM_SpaceEnd-ROM_Space
-//	str r1,[r0]
-//	ldr r0,=romSpacePtr
-//	ldr r7,=ROM_Space
-//	str r7,[r0]
+	ldr r0,=romSize
+	mov r1,#ROM_SpaceEnd-ROM_Space
+	str r1,[r0]
+	ldr r0,=romSpacePtr
+	ldr r7,=ROM_Space
+	str r7,[r0]
 
+	bl memoryMapInit
 	bl gfxInit
 //	bl ioInit
 	bl soundInit
@@ -121,8 +99,6 @@ loadCart: 		;@ Called from C:
 
 	bl resetCartridgeBanks
 
-	ldr r1,=svRAM
-	str r1,[m6502optbl,#m6502MemTbl+0*4]		;@ 0 RAM
 	ldr r6,[m6502optbl,#m6502MemTbl+7*4]		;@ MemMap
 
 	ldrb r5,gMachine
@@ -163,6 +139,48 @@ clearDirtyTiles:
 	mov r1,#0x800/4
 	b memclr_
 
+;@----------------------------------------------------------------------------
+memoryMapInit:
+;@----------------------------------------------------------------------------
+	ldr r0,=m6502OpTable
+
+	ldr r1,=svRAM
+	str r1,[r0,#m6502MemTbl+0*4]		;@ 0 RAM
+	ldr r1,=svVRAM
+	str r1,[r0,#m6502MemTbl+1*4]		;@ 0 VRAM
+
+	ldr r1,=ram6502R
+	str r1,[r0,#m6502ReadTbl+0*4]
+	ldr r1,=IO_R
+	str r1,[r0,#m6502ReadTbl+1*4]
+	ldr r1,=vram6502R
+	str r1,[r0,#m6502ReadTbl+2*4]
+	ldr r1,=empty_R
+	str r1,[r0,#m6502ReadTbl+3*4]
+	ldr r1,=mem6502R4
+	str r1,[r0,#m6502ReadTbl+4*4]
+	ldr r1,=mem6502R5
+	str r1,[r0,#m6502ReadTbl+5*4]
+	ldr r1,=mem6502R6
+	str r1,[r0,#m6502ReadTbl+6*4]
+	ldr r1,=mem6502R7
+	str r1,[r0,#m6502ReadTbl+7*4]
+
+	ldr r1,=ram6502W
+	str r1,[r0,#m6502WriteTbl+0*4]
+	ldr r1,=IO_W
+	str r1,[r0,#m6502WriteTbl+1*4]
+	ldr r1,=vram6502W
+	str r1,[r0,#m6502WriteTbl+2*4]
+	ldr r1,=empty_W
+	str r1,[r0,#m6502WriteTbl+3*4]
+	ldr r1,=rom_W
+	str r1,[r0,#m6502WriteTbl+4*4]
+	str r1,[r0,#m6502WriteTbl+5*4]
+	str r1,[r0,#m6502WriteTbl+6*4]
+	str r1,[r0,#m6502WriteTbl+7*4]
+
+	bx lr
 ;@----------------------------------------------------------------------------
 resetCartridgeBanks:
 ;@----------------------------------------------------------------------------
@@ -260,8 +278,6 @@ romMask:
 biosBase:
 	.long 0
 sramSize:
-	.long 0
-eepromSize:
 	.long 0
 
 #ifdef GBA

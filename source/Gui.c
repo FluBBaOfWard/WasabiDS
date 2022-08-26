@@ -126,7 +126,7 @@ void uiAbout() {
 	drawText(gameInfoString, 9, 0);
 
 	drawText(" WasabiDS    " EMUVERSION, 21, 0);
-	drawText(" SVVideo     " SVVIDEOVERSION, 22, 0);
+	drawText(" KS5360      " KS5360VERSION, 22, 0);
 	drawText(" ARM6502     " ARM6502VERSION, 23, 0);
 }
 

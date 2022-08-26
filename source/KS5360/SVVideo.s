@@ -23,9 +23,11 @@
 	.global svVideoGetStateSize
 	.global svDoScanline
 	.global copyScrollValues
+	.global svConvertScreen
 	.global svConvertTileMaps
-	.global svConvertSprites
 	.global svBufferWindows
+	.global IO_R
+	.global IO_W
 	.global svRead
 	.global svWrite
 	.global svRefW
@@ -45,7 +47,7 @@
 svVideoInit:				;@ Only need to be called once
 ;@----------------------------------------------------------------------------
 	mov r1,#0xffffff00			;@ Build chr decode tbl
-	ldr r2,=CHR_DECODE			;@ 0x400
+	ldr r2,=CHR_DECODE			;@ 0x200
 chrLutLoop:
 	and r0,r1,#0x01
 	tst r1,#0x02
@@ -65,6 +67,25 @@ chrLutLoop:
 	strh r0,[r2],#2
 	adds r1,r1,#1
 	bne chrLutLoop
+
+;@----------------------------------------------------------------------------
+makeTileBgr:
+;@----------------------------------------------------------------------------
+	mov r1,#BG_GFX
+	add r1,r1,#5*2
+	mov r0,#0
+	mov r2,#20
+oLoop:
+	mov r3,#24
+bgrLoop:
+	strh r0,[r1],#2
+	add r0,r0,#1
+	subs r3,r3,#1
+	bne bgrLoop
+	add r0,r0,#8
+	add r1,r1,#8*2
+	subs r2,r2,#1
+	bne oLoop
 
 	bx lr
 ;@----------------------------------------------------------------------------
@@ -144,7 +165,7 @@ svRegistersReset:				;@ in r3=SOC
 ;@----------------------------------------------------------------------------
 IO_Default:
 	.byte 0x00, 0x00, 0x9d, 0xbb, 0x00, 0x00, 0x00, 0x26, 0xfe, 0xde, 0xf9, 0xfb, 0xdb, 0xd7, 0x7f, 0xf5
-	.byte 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x9e, 0x9b, 0x00, 0x00, 0x00, 0x00, 0x99, 0xfd, 0xb7, 0xdf
+	.byte 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0xc6, 0x9b, 0x00, 0x00, 0x00, 0x00, 0x99, 0xfd, 0xb7, 0xdf
 	.byte 0x30, 0x57, 0x75, 0x76, 0x15, 0x73, 0x77, 0x77, 0x20, 0x75, 0x50, 0x36, 0x70, 0x67, 0x50, 0x77
 	.byte 0x57, 0x54, 0x75, 0x77, 0x75, 0x17, 0x37, 0x73, 0x50, 0x57, 0x60, 0x77, 0x70, 0x77, 0x10, 0x73
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
@@ -192,9 +213,6 @@ svVideoLoadState:		;@ In r0=spxptr, r1=source. Out r0=state size.
 	mov r1,#0
 	mov r2,#0x800
 	bl memset
-
-	mov spxptr,r5
-	bl drawFrameGfx
 
 	bl reBankSwitch89AB
 	bl reBankSwitchCDEF
@@ -945,7 +963,7 @@ OUT_Table:
 	.long wsvImportantW			;@ 0x68 Hyper Voice Shadow (lower byte)
 	.long wsvImportantW			;@ 0x69 Hyper Voice Shadow (upper byte)
 	.long wsvImportantW			;@ 0x6A Hyper control
-	.long wsvHyperChanCtrlW		;@ 0x6B Hyper Chan control
+	.long wsvImportantW			;@ 0x6B Hyper Chan control
 	.long wsvUnmappedW			;@ 0x6C ---
 	.long wsvUnmappedW			;@ 0x6D ---
 	.long wsvUnmappedW			;@ 0x6E ---
@@ -999,7 +1017,7 @@ OUT_Table:
 	.long wsvReadOnlyW			;@ 0x9B SND9B
 	.long wsvReadOnlyW			;@ 0x9C SND9C
 	.long wsvReadOnlyW			;@ 0x9D SND9D
-	.long wsvHWVolumeW			;@ 0x9E HW Volume
+	.long wsvImportantW			;@ 0x9E HW Volume
 	.long wsvUnmappedW			;@ 0x9F ---
 
 	.long wsvHW					;@ 0xA0 Hardware type, SOC_ASWAN / SOC_SPHINX.
@@ -1276,12 +1294,6 @@ wsvSndDMACtrlW:				;@ 0x52, only WSC. steals 2n cycles.
 	str r1,[spxptr,#sndDmaLength]
 	bx lr
 ;@----------------------------------------------------------------------------
-wsvHyperChanCtrlW:			;@ 0x6B, only WSC
-;@----------------------------------------------------------------------------
-	and r1,r1,#0x6F
-	strb r1,[spxptr,#wsvHyperVChnCtrl]
-	bx lr
-;@----------------------------------------------------------------------------
 wsvVideoModeW:				;@ 0x60, Video mode, WSColor
 ;@----------------------------------------------------------------------------
 	ldrb r0,[spxptr,#wsvVideoMode]
@@ -1310,12 +1322,6 @@ wsvSoundOutputW:			;@ 0x91 Sound ouput
 	and r0,r0,#0x80				;@ Keep Headphones bit
 	orr r1,r1,r0
 	strb r1,[spxptr,#wsvSoundOutput]
-	bx lr
-;@----------------------------------------------------------------------------
-wsvHWVolumeW:				;@ 0x9E HW Volume?
-;@----------------------------------------------------------------------------
-	and r1,r1,#0x03				;@ Only low 2 bits
-	strb r1,[spxptr,#wsvHWVolume]
 	bx lr
 ;@----------------------------------------------------------------------------
 wsvHW:						;@ 0xA0, Color/Mono, boot rom lock
@@ -1380,8 +1386,7 @@ svConvertTileMaps:			;@ r0 = destination
 	andeq r7,r7,#0x77
 	adr lr,tMapRet
 	tst r1,#0x40				;@ 4 bit planes?
-	beq bgMono
-	b bgColor
+	b bgMono
 
 tMapRet:
 	ldmfd sp!,{r4-r11,pc}
@@ -1406,7 +1411,6 @@ endFrame:
 	ldr r2,[spxptr,#wsvBgXScroll]
 	bl scrollCnt
 	bl endFrameGfx
-	bl wsvDMASprites
 
 	ldrb r0,[spxptr,#wsvInterruptStatus]
 	ldrb r2,[spxptr,#wsvTimerControl]
@@ -1427,22 +1431,6 @@ noTimerVBlIrq:
 	bl svSetInterruptStatus
 
 	ldmfd sp!,{pc}
-;@----------------------------------------------------------------------------
-drawFrameGfx:
-;@----------------------------------------------------------------------------
-	stmfd sp!,{lr}
-
-	ldrb r0,[spxptr,#wsvVideoMode]
-	adr lr,TransRet
-	and r1,r0,#0xC0
-	cmp r1,#0xC0
-	bne TransferVRAM4Planar
-	tst r0,#0x20
-	bne TransferVRAM16Packed
-	b TransferVRAM16Planar
-TransRet:
-
-	ldmfd sp!,{pc}
 
 ;@----------------------------------------------------------------------------
 frameEndHook:
@@ -1460,7 +1448,6 @@ lineStateTable:
 	.long 0, newFrame			;@ zeroLine
 	.long 72, midFrame			;@ Middle of screen
 	.long 144, endFrame			;@ After last visible scanline
-	.long 145, drawFrameGfx		;@ frameIRQ
 lineStateLastLine:
 	.long 159, frameEndHook		;@ totalScanlines
 ;@----------------------------------------------------------------------------
@@ -1567,214 +1554,6 @@ sndDmaCont:
 	strbeq r0,[spxptr,#wsvSound2Vol]
 	sub cycles,cycles,#1*CYCLE
 	ldmfd sp!,{r4,pc}
-;@----------------------------------------------------------------------------
-T_data:
-	.long DIRTYTILES+0x200
-	.long svVRAM
-	.long CHR_DECODE
-	.long BG_GFX+0x08000		;@ BGR tiles
-	.long SPRITE_GFX			;@ SPR tiles
-;@----------------------------------------------------------------------------
-TransferVRAM16Packed:
-;@----------------------------------------------------------------------------
-	stmfd sp!,{r4-r10,lr}
-	adr r0,T_data
-	ldmia r0,{r4-r8}
-	ldr r6,=0xF0F0F0F0
-	mov r9,#-1
-	mov r1,#0
-
-tileLoop16_0p:
-	ldr r10,[r4,r1,lsr#5]
-	str r9,[r4,r1,lsr#5]
-	tst r10,#0x000000FF
-	addne r1,r1,#0x20
-	bleq tileLoop16_1p
-	tst r10,#0x0000FF00
-	addne r1,r1,#0x20
-	bleq tileLoop16_1p
-	tst r10,#0x00FF0000
-	addne r1,r1,#0x20
-	bleq tileLoop16_1p
-	tst r10,#0xFF000000
-	addne r1,r1,#0x20
-	bleq tileLoop16_1p
-	cmp r1,#0x8000
-	bne tileLoop16_0p
-
-	ldmfd sp!,{r4-r10,pc}
-
-tileLoop16_1p:
-	ldr r0,[r5,r1]
-
-	and r3,r6,r0,lsl#4
-	and r0,r0,r6
-	orr r3,r3,r0,lsr#4
-
-	str r3,[r7,r1]
-	str r3,[r8,r1]
-	add r1,r1,#4
-	tst r1,#0x1C
-	bne tileLoop16_1p
-
-	bx lr
-
-;@----------------------------------------------------------------------------
-TransferVRAM16Planar:
-;@----------------------------------------------------------------------------
-	stmfd sp!,{r4-r10,lr}
-	adr r0,T_data
-	ldmia r0,{r4-r8}
-	mov r9,#-1
-	mov r1,#0
-
-tx16ColTileLoop0:
-	ldr r10,[r4,r1,lsr#5]
-	str r9,[r4,r1,lsr#5]
-	tst r10,#0x000000FF
-	addne r1,r1,#0x20
-	bleq tx16ColTileLoop1
-	tst r10,#0x0000FF00
-	addne r1,r1,#0x20
-	bleq tx16ColTileLoop1
-	tst r10,#0x00FF0000
-	addne r1,r1,#0x20
-	bleq tx16ColTileLoop1
-	tst r10,#0xFF000000
-	addne r1,r1,#0x20
-	bleq tx16ColTileLoop1
-	cmp r1,#0x8000
-	bne tx16ColTileLoop0
-
-	ldmfd sp!,{r4-r10,pc}
-
-tx16ColTileLoop1:
-	ldr r0,[r5,r1]
-
-	ands r3,r0,#0x000000FF
-	ldrne r3,[r6,r3,lsl#2]
-	ands r2,r0,#0x0000FF00
-	ldrne r2,[r6,r2,lsr#6]
-	orrne r3,r3,r2,lsl#1
-	ands r2,r0,#0x00FF0000
-	ldrne r2,[r6,r2,lsr#14]
-	orrne r3,r3,r2,lsl#2
-	ands r2,r0,#0xFF000000
-	ldrne r2,[r6,r2,lsr#22]
-	orrne r3,r3,r2,lsl#3
-
-	str r3,[r7,r1]
-	str r3,[r8,r1]
-	add r1,r1,#4
-	tst r1,#0x1C
-	bne tx16ColTileLoop1
-
-	bx lr
-
-;@----------------------------------------------------------------------------
-T4Data:
-	.long DIRTYTILES+0x100
-	.long svVRAM
-	.long CHR_DECODE
-	.long BG_GFX+0x08000		;@ BGR tiles
-	.long BG_GFX+0x0C000		;@ BGR tiles 2
-	.long SPRITE_GFX			;@ SPR tiles
-	.long SPRITE_GFX+0x4000		;@ SPR tiles 2
-	.long 0x44444444			;@ Extra bitplane
-;@----------------------------------------------------------------------------
-TransferVRAM4Planar:
-;@----------------------------------------------------------------------------
-	stmfd sp!,{r4-r12,lr}
-	adr r0,T4Data
-	ldmia r0,{r4-r11}
-	mov r1,#0
-
-tx4ColTileLoop0:
-	ldr r12,[r4,r1,lsr#5]
-	str r11,[r4,r1,lsr#5]
-	tst r12,#0x000000FF
-	addne r1,r1,#0x20
-	bleq tx4ColTileLoop1
-	tst r12,#0x0000FF00
-	addne r1,r1,#0x20
-	bleq tx4ColTileLoop1
-	tst r12,#0x00FF0000
-	addne r1,r1,#0x20
-	bleq tx4ColTileLoop1
-	tst r12,#0xFF000000
-	addne r1,r1,#0x20
-	bleq tx4ColTileLoop1
-	cmp r1,#0x2000
-	bne tx4ColTileLoop0
-
-	ldmfd sp!,{r4-r12,pc}
-
-tx4ColTileLoop1:
-	ldr r0,[r5,r1]
-
-	ands r3,r0,#0x000000FF
-	ldrne r3,[r6,r3,lsl#2]
-	ands r2,r0,#0x0000FF00
-	ldrne r2,[r6,r2,lsr#6]
-	orrne r3,r3,r2,lsl#1
-
-	str r3,[r8,r1,lsl#1]
-	str r3,[r10,r1,lsl#1]
-	orr r3,r3,r11
-	str r3,[r7,r1,lsl#1]
-	str r3,[r9,r1,lsl#1]
-	add r1,r1,#2
-
-	ands r3,r0,#0x00FF0000
-	ldrne r3,[r6,r3,lsr#14]
-	ands r2,r0,#0xFF000000
-	ldrne r2,[r6,r2,lsr#22]
-	orrne r3,r3,r2,lsl#1
-
-	str r3,[r8,r1,lsl#1]
-	str r3,[r10,r1,lsl#1]
-	orr r3,r3,r11
-	str r3,[r7,r1,lsl#1]
-	str r3,[r9,r1,lsl#1]
-	add r1,r1,#2
-
-	tst r1,#0x1C
-	bne tx4ColTileLoop1
-
-	bx lr
-
-;@-------------------------------------------------------------------------------
-;@ bgChrFinish				;end of frame...
-;@-------------------------------------------------------------------------------
-;@	ldr r5,=0xFE00FE00
-;@ MSB          LSB
-;@ hvbppppnnnnnnnnn
-bgColor:
-	and r1,r7,#0x0f
-	add r1,r10,r1,lsl#11
-	stmfd sp!,{lr}
-	bl bgm16Start
-	ldmfd sp!,{lr}
-
-	and r1,r7,#0xf0
-	add r1,r10,r1,lsl#7
-
-bgm16Start:
-	mov r2,#0x400
-bgm16Loop:
-	ldr r3,[r1],#4				;@ Read from Supervision Tilemap RAM
-
-	and r4,r5,r3				;@ Mask out palette, flip & bank
-	bic r3,r3,r5
-	orr r4,r4,r4,lsr#7			;@ Switch palette vs flip + bank
-	and r4,r5,r4,lsl#3			;@ Mask again
-	orr r3,r3,r4				;@ Add palette, flip + bank.
-
-	str r3,[r0],#4				;@ Write to GBA/NDS Tilemap RAM, background
-	subs r2,r2,#2
-	bne bgm16Loop
-
-	bx lr
 
 ;@-------------------------------------------------------------------------------
 ;@ bgChrFinish				;end of frame...
@@ -1843,90 +1622,42 @@ setScrlLoop:
 	bx lr
 
 ;@----------------------------------------------------------------------------
-wsvDMASprites:
+svConvertScreen:	;@ In r0 = dest
 ;@----------------------------------------------------------------------------
-	stmfd sp!,{spxptr,lr}
+	stmfd sp!,{r3-r7}
 
-	add r0,spxptr,#wsvSpriteRAM
-	ldr r1,[spxptr,#gfxRAM]
-	ldrb r2,[spxptr,#wsvSprTblAdr]
-	add r1,r1,r2,lsl#9
-	ldrb r2,[spxptr,#wsvSpriteFirst]	;@ First sprite
-	add r1,r1,r2,lsl#2
+	ldr r4,=CHR_DECODE
+	ldr r2,=svVRAM
 
-	ldrb r3,[spxptr,#wsvSpriteCount]	;@ Sprite count
-	add r3,r3,r2
-	cmp r3,#128
-	movpl r3,#128
-	subs r2,r3,r2
-	movmi r2,#0
-	strb r2,[spxptr,#wsvLatchedSprCnt]
-	ldmfdle sp!,{spxptr,pc}
-	sub cycles,cycles,r2,lsl#CYC_SHIFT+1
-	mov r2,r2,lsl#2
+	mov r7,#20				;@ 20 tiles high screen
+scLoop:
+	mov r6,#8				;@ 8 pix high tiles
+tiLoop:
+	mov r5,#24				;@ 24*8=192 pix
+rwLoop:
+	ldrb r3,[r2],#1			;@ Read 4 1st pixels
+	mov r3,r3,lsl#1
+	ldrh r3,[r4,r3]
+	ldrb r1,[r2],#1			;@ Read 4 more pixels
+	mov r1,r1,lsl#1
+	ldrh r1,[r4,r1]
+	orr r3,r3,r1,lsl#16
+	str r3,[r0],#32
+	subs r5,r5,#1
+	bne rwLoop
 
-	bl memCopy
-
-	ldmfd sp!,{spxptr,pc}
-
-;@----------------------------------------------------------------------------
-	.equ PRIORITY,	0x400		;@ 0x400=AGB OBJ priority 1
-;@----------------------------------------------------------------------------
-svConvertSprites:			;@ in r0 = destination.
-;@----------------------------------------------------------------------------
-	stmfd sp!,{r4-r8,lr}
-
-	add r1,spxptr,#wsvSpriteRAM
-	ldrb r7,[spxptr,#wsvLatchedSprCnt]
-	ldrb r2,[spxptr,#wsvVideoMode]
-	tst r2,#0x40				;@ 4 bit planes?
-	movne r8,#0x0000
-	moveq r8,#0x0800			;@ Palette bit 2
-	cmp r7,#0
-	rsb r6,r7,#128				;@ Max number of sprites minus used.
-	beq skipSprites
-
-	mov r2,#(SCREEN_WIDTH-GAME_WIDTH)/2		;@ GBA/NDS X offset
-	mov r5,#(SCREEN_HEIGHT-GAME_HEIGHT)/2	;@ GBA/NDS Y offset
-	orr r5,r2,r5,lsl#24
-dm5:
-	ldr r2,[r1],#4				;@ Supervision OBJ, r0=Tile,Attrib,Ypos,Xpos.
-	add r3,r5,r2,lsl#8
-	mov r3,r3,lsr#24			;@ Ypos
-	mov r4,r2,lsr#24			;@ Xpos
-	cmp r4,#240
-	addpl r4,r4,#0x100
-	add r4,r4,r5
-	mov r4,r4,lsl#23
-	orr r3,r3,r4,lsr#7
-	and r4,r2,#0xC000
-	orr r3,r3,r4,lsl#14			;@ Flip
-
-	str r3,[r0],#4				;@ Store OBJ Atr 0,1. Xpos, ypos, flip, scale/rot, size, shape.
-
-	mov r3,r2,lsl#23
-	mov r3,r3,lsr#23
-	and r4,r2,#0x0E00			;@ Palette
-	orr r3,r3,r4,lsl#3
-	tst r2,#0x2000				;@ Priority
-#ifdef NDS
-	orreq r3,r3,#PRIORITY		;@ Prio NDS
-#elif GBA
-	orreq r3,r3,#PRIORITY*2		;@ Prio GBA
-#endif
-	tst r2,r8					;@ Palette bit 2 for 2bitplane
-	orrne r3,r3,#0x200			;@ Opaque tiles
-
-	strh r3,[r0],#4				;@ Store OBJ Atr 2. Pattern, palette.
-	subs r7,r7,#1
-	bne dm5
-skipSprites:
-	mov r2,#0x200+SCREEN_HEIGHT	;@ Double, y=SCREEN_HEIGHT
-skipSprLoop:
+	sub r0,r0,#32*24
+	add r0,r0,#4
 	subs r6,r6,#1
-	strpl r2,[r0],#8
-	bhi skipSprLoop
-	ldmfd sp!,{r4-r8,pc}
+	bne tiLoop
+
+	add r0,r0,#32*31
+	subs r7,r7,#1
+	bne scLoop
+
+	ldmfd sp!,{r3-r7}
+	bx lr
+
 
 ;@----------------------------------------------------------------------------
 #ifdef GBA

@@ -24,8 +24,8 @@ void paletteInit(u8 gammaVal);
 void paletteTxAll(void);
 void updateLCDRefresh(void);
 void refreshGfx(void);
-u8 v30ReadPort(u16 port);
-void v30WritePort(u16 port, u8 value);
+//u8 v30ReadPort(u16 port);
+//void v30WritePort(u16 port, u8 value);
 
 #ifdef __cplusplus
 } // extern "C"
