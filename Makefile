@@ -38,7 +38,7 @@ GRAPHICS	:=	source/Shared/graphics \
 # options for code generation
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv5te -mtune=arm946e-s -mthumb -mthumb-interwork
-FLAGS	:=	-DARM9 -DNDS -DKS5360
+FLAGS	:=	-DARM9 -DNDS -DCPU_KS5360
 
 ifeq ($(DEBUG),1)
 	CFLAGS	:=	-gdwarf-2 -Wall -ffast-math $(ARCH)

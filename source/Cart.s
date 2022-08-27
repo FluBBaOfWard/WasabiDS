@@ -110,7 +110,7 @@ loadCart: 		;@ Called from C:
 	movne r0,#2				;@ Set boot rom overlay (size big)
 	ldrne r1,g_BIOSBASE_COLOR
 	ldrne r2,=WSC_BIOS_INTERNAL
-	movne r4,#SOC_SPHINX
+	movne r4,#SOC_KS5360
 	strb r4,gSOC
 	cmp r1,#0
 	moveq r1,r2				;@ Use internal bios
@@ -136,7 +136,7 @@ loadCart: 		;@ Called from C:
 clearDirtyTiles:
 ;@----------------------------------------------------------------------------
 	ldr r0,=DIRTYTILES			;@ Clear RAM
-	mov r1,#0x800/4
+	mov r1,#0x200/4
 	b memclr_
 
 ;@----------------------------------------------------------------------------
@@ -151,7 +151,7 @@ memoryMapInit:
 
 	ldr r1,=ram6502R
 	str r1,[r0,#m6502ReadTbl+0*4]
-	ldr r1,=IO_R
+	ldr r1,=wsvReadIO
 	str r1,[r0,#m6502ReadTbl+1*4]
 	ldr r1,=vram6502R
 	str r1,[r0,#m6502ReadTbl+2*4]
@@ -168,7 +168,7 @@ memoryMapInit:
 
 	ldr r1,=ram6502W
 	str r1,[r0,#m6502WriteTbl+0*4]
-	ldr r1,=IO_W
+	ldr r1,=wsvWriteIO
 	str r1,[r0,#m6502WriteTbl+1*4]
 	ldr r1,=vram6502W
 	str r1,[r0,#m6502WriteTbl+2*4]
@@ -185,7 +185,7 @@ memoryMapInit:
 resetCartridgeBanks:
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{lr}
-	ldr spxptr,=sphinx0
+	ldr svvptr,=ks5360_0
 	mov r1,#0
 	bl BankSwitch89AB_W
 	mov r1,#-1
@@ -194,11 +194,11 @@ resetCartridgeBanks:
 ;@----------------------------------------------------------------------------
 reBankSwitch89AB:				;@ 0x8000-0xBFFF
 ;@----------------------------------------------------------------------------
-//	ldrb r1,[spxptr,#wsvBnk0SlctX]
+//	ldrb r1,[svvptr,#wsvBnk0SlctX]
 ;@----------------------------------------------------------------------------
 BankSwitch89AB_W:				;@ 0x8000-0xBFFF
 ;@----------------------------------------------------------------------------
-//	strb r1,[spxptr,#wsvBnk0SlctX]
+//	strb r1,[svvptr,#wsvBnk0SlctX]
 
 	ldr r0,romMask
 	ldr r2,romPtr
@@ -212,11 +212,11 @@ BankSwitch89AB_W:				;@ 0x8000-0xBFFF
 ;@----------------------------------------------------------------------------
 reBankSwitchCDEF:				;@ 0xC000-0xFFFF
 ;@----------------------------------------------------------------------------
-//	ldrb r1,[spxptr,#wsvBnk1SlctX]
+//	ldrb r1,[svvptr,#wsvBnk1SlctX]
 ;@----------------------------------------------------------------------------
 BankSwitchCDEF_W:				;@ 0xC000-0xFFFF
 ;@----------------------------------------------------------------------------
-//	strb r1,[spxptr,#wsvBnk1SlctX]
+//	strb r1,[svvptr,#wsvBnk1SlctX]
 
 	ldr r0,romMask
 	ldr r2,romPtr
@@ -248,7 +248,7 @@ gMachineSet:
 gMachine:
 	.byte HW_SUPERVISION
 gSOC:
-	.byte SOC_SPHINX
+	.byte SOC_KS5360
 gLang:
 	.byte 1						;@ language
 gPaletteBank:

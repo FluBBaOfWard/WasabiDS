@@ -1,12 +1,12 @@
 Wasabi revision history
 -=-=-=-=-=-=-=-=-=-=-=-
 
-V1.1.0 - 2022-08-30 (FluBBa)
+V0.2.0 - 2022-08-30 (FluBBa)
    First release for Nintendo DS.
 
-V1.0.1 - 2022-08-24 (FluBBa)
+V0.1.1 - 2022-08-24 (FluBBa)
    Started port to Nintendo DS & devkitPro.
 
-V1.0.0 - 2004-11-30 (FluBBa)
+V0.1.0 - 2004-11-30 (FluBBa)
    First release: cpu, vram emulated.
    Probably the last release as well.

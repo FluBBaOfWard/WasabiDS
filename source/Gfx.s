@@ -10,10 +10,11 @@
 	.global paletteTxAll
 	.global refreshGfx
 	.global endFrameGfx
+	.global wsvReadIO
+	.global wsvWriteIO
 	.global updateLCDRefresh
 	.global setScreenRefresh
 	.global getInterruptVector
-	.global setInterruptExternal
 
 	.global gfxState
 	.global gGammaValue
@@ -28,7 +29,7 @@
 	.global tmpOamBuffer
 
 
-	.global sphinx0
+	.global ks5360_0
 
 
 	.syntax unified
@@ -62,9 +63,9 @@ gfxReset:					;@ Called with CPU reset
 
 	bl gfxWinInit
 
-	ldr r0,=m6502SetIRQPin
-	mov r1,#0
-	ldr r2,=svRAM
+	ldr r0,=m6502SetNMIPin
+	ldr r1,=m6502SetIRQPin
+	ldr r2,=svVRAM
 	ldr r3,=gSOC
 	ldrb r3,[r3]
 	bl svVideoReset0
@@ -75,7 +76,7 @@ gfxReset:					;@ Called with CPU reset
 	bl paletteInit				;@ Do palette mapping
 	bl paletteTxAll				;@ Transfer it
 
-	ldr spxptr,=sphinx0
+	ldr svvptr,=ks5360_0
 
 	ldmfd sp!,{pc}
 
@@ -101,13 +102,13 @@ gfxWinInit:
 monoPalInit:
 	.type monoPalInit STT_FUNC
 ;@----------------------------------------------------------------------------
-	ldr spxptr,=sphinx0
+	ldr svvptr,=ks5360_0
 	stmfd sp!,{r4-r6,lr}
 	ldr r0,=gPaletteBank
 	ldrb r0,[r0]
 	adr r1,monoPalette
 	add r1,r1,r0,lsl#4
-	ldr r0,[spxptr,#paletteRAM]
+	ldr r0,[svvptr,#paletteRAM]
 	add r0,r0,#0x180
 
 	mov r2,#8
@@ -185,20 +186,16 @@ paletteTxAll:				;@ Called from ui.c
 	.type paletteTxAll STT_FUNC
 ;@----------------------------------------------------------------------------
 	ldr r0,=EMUPALBUFF
-	ldr spxptr,=sphinx0
+	ldr svvptr,=ks5360_0
 ;@----------------------------------------------------------------------------
-paletteTx:					;@ r0=destination, spxptr=Sphinx
+paletteTx:					;@ r0=destination, svvptr=KS5360
 ;@----------------------------------------------------------------------------
 	ldr r1,=MAPPED_RGB
 	ldr r2,=0x1FFE
 	stmfd sp!,{r4-r8,lr}
 	mov r5,#0
-	ldrb r3,[spxptr,#wsvBGColor]	;@ Background palette
-	ldrb r7,[spxptr,#wsvVideoMode]
-	ands r7,r7,#0xC0			;@ Color mode?
-	beq bnwTx
 
-	ldr r4,=svRAM+0xFE00
+	ldr r4,=svRAM+0x1000
 	mov r3,r3,lsl#1
 	ldrh r3,[r4,r3]
 	and r3,r2,r3,lsl#1
@@ -248,60 +245,12 @@ col4TxLoop:
 	ldmfd sp!,{r4-r8,lr}
 	bx lr
 
-bnwTx:
-	add r4,spxptr,#wsvPalette0
-	and r3,r3,#0x7
-	tst r3,#1
-	add r7,spxptr,#wsvColor01
-	ldrb r3,[r7,r3,lsr#1]
-	movne r3,r3,lsr#4
-	and r3,r3,#0xF
-	eor r3,r3,#0xF
-	orr r3,r3,r3,lsl#4
-	orr r3,r3,r3,lsl#4
-	and r3,r2,r3,lsl#1
-	ldrh r3,[r1,r3]
-	strh r3,[r0]				;@ Background palette
-bnwTxLoop2:
-	ldrh r6,[r4],#2
-bnwTxLoop:
-	and r3,r6,#0x7
-	mov r6,r6,lsr#4
-	tst r3,#1
-	ldrb r3,[r7,r3,lsr#1]
-	movne r3,r3,lsr#4
-	and r3,r3,#0xF
-	eor r3,r3,#0xF
-	orr r3,r3,r3,lsl#4
-	orr r3,r3,r3,lsl#4
-	and r3,r2,r3,lsl#1
-	ldrh r3,[r1,r3]
-
-	cmp r5,#0x0
-	strhne r3,[r0]				;@ Background palette
-	strh r3,[r0,#0x8]			;@ Opaque tiles palette
-	cmp r5,#0x100
-	addpl r8,r0,#0x100
-	strhpl r3,[r8]				;@ Sprite palette
-	strhpl r3,[r8,#0x8]			;@ Sprite palette opaque
-
-	add r0,r0,#2
-	add r5,r5,#2
-	tst r5,#6
-	bne bnwTxLoop
-	add r0,r0,#0x18
-	add r5,r5,#0x18
-	cmp r5,#0x200
-	bmi bnwTxLoop2
-
-	ldmfd sp!,{r4-r8,lr}
-	bx lr
 ;@----------------------------------------------------------------------------
 updateLCDRefresh:
 	.type updateLCDRefresh STT_FUNC
 ;@----------------------------------------------------------------------------
-	adr spxptr,sphinx0
-	ldrb r1,[spxptr,#wsvTotalLines]
+	adr svvptr,ks5360_0
+	ldrb r1,[svvptr,#wsvLCDYSize]
 	b svRefW
 ;@----------------------------------------------------------------------------
 setScreenRefresh:			;@ r0 in = WS scan line count.
@@ -370,11 +319,11 @@ vblIrqHandler:
 	orr r4,r4,#0x100			;@ 256 words (1024 bytes)
 	stmia r1,{r2-r4}			;@ DMA3 go
 
-	adr spxptr,sphinx0
+	adr svvptr,ks5360_0
 	ldr r0,GFX_BG0CNT
 	str r0,[r6,#REG_BG0CNT]
 	ldr r0,GFX_DISPCNT
-	ldrb r1,[spxptr,#wsvLatchedDispCtrl]
+	ldrb r1,[svvptr,#wsvLatchedDispCtrl]
 	tst r1,#0x01
 	biceq r0,r0,#0x0100			;@ Turn off Bg
 	tst r1,#0x02
@@ -387,7 +336,7 @@ vblIrqHandler:
 	bic r0,r0,r2,lsl#8
 	strh r0,[r6,#REG_DISPCNT]
 
-	ldr r0,[spxptr,#windowData]
+	ldr r0,[svvptr,#windowData]
 	strh r0,[r6,#REG_WIN0H]
 	mov r0,r0,lsr#16
 	strh r0,[r6,#REG_WIN0V]
@@ -438,7 +387,7 @@ nothingNew:
 refreshGfx:					;@ Called from C when changing scaling.
 	.type refreshGfx STT_FUNC
 ;@----------------------------------------------------------------------------
-	adr spxptr,sphinx0
+	adr svvptr,ks5360_0
 ;@----------------------------------------------------------------------------
 endFrameGfx:				;@ Called just before screen end (~line 143)	(r0-r3 safe to use)
 ;@----------------------------------------------------------------------------
@@ -466,8 +415,6 @@ endFrameGfx:				;@ Called just before screen end (~line 143)	(r0-r3 safe to use)
 	bx lr
 
 ;@----------------------------------------------------------------------------
-DMA0BUFPTR:		.long 0
-
 tmpOamBuffer:	.long OAM_BUFFER1
 dmaOamBuffer:	.long OAM_BUFFER2
 tmpScroll:		.long SCROLLBUFF1
@@ -484,27 +431,25 @@ frameDone:		.byte 0
 ;@----------------------------------------------------------------------------
 svVideoReset0:		;@ r0=periodicIrqFunc, r1=, r2=frame2IrqFunc, r3=model
 ;@----------------------------------------------------------------------------
-	adr spxptr,sphinx0
+	adr svvptr,ks5360_0
 	b svVideoReset
 ;@----------------------------------------------------------------------------
-v30ReadPort:
-	.type v30ReadPort STT_FUNC
+wsvReadIO:
+	.type wsvReadIO STT_FUNC
 ;@----------------------------------------------------------------------------
-	adr spxptr,sphinx0
+	mov r0,r12
+	adr svvptr,ks5360_0
 	b svRead
 ;@----------------------------------------------------------------------------
-v30WritePort:
-	.type v30WritePort STT_FUNC
+wsvWriteIO:
+	.type wsvWriteIO STT_FUNC
 ;@----------------------------------------------------------------------------
-	adr spxptr,sphinx0
+	mov r1,r0
+	mov r0,r12
+	adr svvptr,ks5360_0
 	b svWrite
-;@----------------------------------------------------------------------------
-setInterruptExternal:		;@ r0=irq state
-;@----------------------------------------------------------------------------
-	adr spxptr,sphinx0
-	b svSetInterruptExternal
-sphinx0:
-	.space sphinxSize
+ks5360_0:
+	.space ks5360Size
 ;@----------------------------------------------------------------------------
 
 gfxState:

@@ -30,7 +30,7 @@ soundReset:
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{lr}
 	mov r0,#0
-	ldr spxptr,=sphinx0
+	ldr svvptr,=ks5360_0
 //	bl wsAudioReset			;@ sound
 	ldmfd sp!,{lr}
 	bx lr
@@ -56,7 +56,7 @@ VblSound2:					;@ r0=length, r1=pointer
 //	cmp r2,#0
 //	bne playSamples
 
-	ldr spxptr,=sphinx0
+	ldr svvptr,=ks5360_0
 //	mov r0,r0,lsl#2
 //	bl wsAudioMixer
 	ldmfd sp!,{r0,r1,lr}

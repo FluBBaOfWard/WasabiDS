@@ -17,7 +17,7 @@ CPU:
 	See ARM6502 Todo.
 
 Sound:
-	See Sphinx todo.
+	See KS5360 todo.
 
 Misc:
 	Cardcaptor Sakura, timing sensitive.

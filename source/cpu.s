@@ -4,7 +4,7 @@
 #include "ARM6502/M6502mac.h"
 #include "KS5360/SVVideo.i"
 
-#define CYCLE_PSL (96)
+#define CYCLE_PSL (240)
 
 	.global run
 	.global cpuInit
@@ -48,7 +48,7 @@ runStart:
 //	ldr v30ptr,=V30OpTable
 //	bl V30SetNMIPin
 
-	bl refreshEMUjoypads		;@ Z=1 if communication ok
+	bl refreshEMUjoypads
 skipInput:
 	ldr m6502optbl,=m6502OpTable
 	add r1,m6502optbl,#m6502Regs
@@ -59,7 +59,7 @@ svFrameLoop:
 	mov r0,#CYCLE_PSL
 	b m6502RunXCycles
 svM6502End:
-	ldr spxptr,=sphinx0
+	ldr svvptr,=ks5360_0
 	bl svDoScanline
 	cmp r0,#0
 	bne svFrameLoop

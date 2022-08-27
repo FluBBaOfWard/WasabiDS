@@ -23,7 +23,7 @@
 		9C175BEB28B635EF00293DA7 /* M6502mac.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = M6502mac.h; sourceTree = "<group>"; };
 		9C175BEF28B63D1800293DA7 /* Version.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Version.h; sourceTree = "<group>"; };
 		9C175BF028B63D1800293DA7 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		9C175BF128B63D1800293DA7 /* SVVideo_todo.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = SVVideo_todo.txt; sourceTree = "<group>"; };
+		9C175BF128B63D1800293DA7 /* KS5360_todo.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = KS5360_todo.txt; sourceTree = "<group>"; };
 		9C175BF228B63D1800293DA7 /* SVVideo.i */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c.preprocessed; path = SVVideo.i; sourceTree = "<group>"; };
 		9C175BF328B63D1800293DA7 /* SVVideo.s */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = SVVideo.s; sourceTree = "<group>"; };
 		9C175BF428B63D1800293DA7 /* SVVideo.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SVVideo.h; sourceTree = "<group>"; };
@@ -125,7 +125,7 @@
 		9C175BEE28B63D1800293DA7 /* KS5360 */ = {
 			isa = PBXGroup;
 			children = (
-				9C175BF128B63D1800293DA7 /* SVVideo_todo.txt */,
+				9C175BF128B63D1800293DA7 /* KS5360_todo.txt */,
 				9C175BF028B63D1800293DA7 /* README.md */,
 				9C175BF528B63D1800293DA7 /* History.txt */,
 				9C175BEF28B63D1800293DA7 /* Version.h */,

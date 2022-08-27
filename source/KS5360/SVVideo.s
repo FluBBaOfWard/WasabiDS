@@ -24,15 +24,11 @@
 	.global svDoScanline
 	.global copyScrollValues
 	.global svConvertScreen
-	.global svConvertTileMaps
 	.global svBufferWindows
-	.global IO_R
-	.global IO_W
 	.global svRead
 	.global svWrite
 	.global svRefW
 	.global svGetInterruptVector
-	.global svSetInterruptExternal
 
 	.syntax unified
 	.arm
@@ -89,31 +85,34 @@ bgrLoop:
 
 	bx lr
 ;@----------------------------------------------------------------------------
-svVideoReset:		;@ r0=IrqFunc, r1=, r2=ram+LUTs, r3=SOC 0=mono,1=color,2=crystal, r12=spxptr
+svVideoReset:		;@ r0=NmiFunc, r1=IrqFunc, r2=ram+LUTs, r3=SOC 0=mono,1=color,2=crystal, r12=svvptr
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{r0-r3,lr}
 
-	mov r0,spxptr
-	ldr r1,=sphinxSize/4
-	bl memclr_					;@ Clear Sphinx state
+	mov r0,svvptr
+	ldr r1,=ks5360Size/4
+	bl memclr_					;@ Clear KS5360 state
 
 	ldr r2,=lineStateTable
 	ldr r1,[r2],#4
 	mov r0,#-1
-	stmia spxptr,{r0-r2}		;@ Reset scanline, nextChange & lineState
+	stmia svvptr,{r0-r2}		;@ Reset scanline, nextChange & lineState
 
 	ldmfd sp!,{r0-r3,lr}
 	cmp r0,#0
 	adreq r0,dummyIrqFunc
-	str r0,[spxptr,#irqFunction]
+	str r0,[svvptr,#nmiFunction]
+	cmp r1,#0
+	adreq r1,dummyIrqFunc
+	str r1,[svvptr,#irqFunction]
 
-	str r2,[spxptr,#gfxRAM]
+	str r2,[svvptr,#gfxRAM]
 	add r0,r2,#0xFE00
-	str r0,[spxptr,#paletteRAM]
+	str r0,[svvptr,#paletteRAM]
 	ldr r0,=SCROLL_BUFF
-	str r0,[spxptr,#scrollBuff]
+	str r0,[svvptr,#scrollBuff]
 
-	strb r3,[spxptr,#wsvSOC]
+	strb r3,[svvptr,#wsvSOC]
 
 	b svRegistersReset
 
@@ -146,20 +145,12 @@ thumbCallR3:
 svRegistersReset:				;@ in r3=SOC
 ;@----------------------------------------------------------------------------
 	adr r1,IO_Default
-//	cmp r3,#SOC_SPHINX
-//	adreq r1,WSC_IO_Default
-//	adrhi r1,SC_IO_Default
-	mov r2,#0x100
-	add r0,spxptr,#wsvRegs
-	stmfd sp!,{spxptr,lr}
+	mov r2,#0x30
+	add r0,svvptr,#wsvRegs
+	stmfd sp!,{svvptr,lr}
 	bl memCopy
-	ldmfd sp!,{spxptr,lr}
-	ldrb r1,[spxptr,#wsvSOC]
-	cmp r1,#SOC_ASWAN
-	mov r0,#0x84
-	movne r0,#0x86
-	strb r0,[spxptr,#wsvSystemCtrl1]
-	ldrb r1,[spxptr,#wsvTotalLines]
+	ldmfd sp!,{svvptr,lr}
+	ldrb r1,[svvptr,#wsvLCDYSize]
 	b svRefW
 
 ;@----------------------------------------------------------------------------
@@ -167,52 +158,35 @@ IO_Default:
 	.byte 0x00, 0x00, 0x9d, 0xbb, 0x00, 0x00, 0x00, 0x26, 0xfe, 0xde, 0xf9, 0xfb, 0xdb, 0xd7, 0x7f, 0xf5
 	.byte 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0xc6, 0x9b, 0x00, 0x00, 0x00, 0x00, 0x99, 0xfd, 0xb7, 0xdf
 	.byte 0x30, 0x57, 0x75, 0x76, 0x15, 0x73, 0x77, 0x77, 0x20, 0x75, 0x50, 0x36, 0x70, 0x67, 0x50, 0x77
-	.byte 0x57, 0x54, 0x75, 0x77, 0x75, 0x17, 0x37, 0x73, 0x50, 0x57, 0x60, 0x77, 0x70, 0x77, 0x10, 0x73
-	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-	.byte 0x0a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0f, 0x00, 0x00, 0x00, 0x00
-	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1f, 0x00, 0x00
-	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00
-	.byte 0x84, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4f, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-	.byte 0x00, 0xdb, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x42, 0x00, 0x83, 0x00
-// Cartridge
-	.byte 0x2f, 0x3f, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1
-	.byte 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1
-	.byte 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1
-	.byte 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1, 0xd1
 
 ;@----------------------------------------------------------------------------
-svVideoSaveState:		;@ In r0=destination, r1=spxptr. Out r0=state size.
+svVideoSaveState:		;@ In r0=destination, r1=svvptr. Out r0=state size.
 	.type	svVideoSaveState STT_FUNC
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{r4,r5,lr}
 	mov r4,r0					;@ Store destination
-	mov r5,r1					;@ Store spxptr (r1)
+	mov r5,r1					;@ Store svvptr (r1)
 
-	add r1,r5,#sphinxState
-	mov r2,#sphinxStateEnd-sphinxState
+	add r1,r5,#ks5360State
+	mov r2,#ks5360StateEnd-ks5360State
 	bl memCopy
 
 	ldmfd sp!,{r4,r5,lr}
-	mov r0,#sphinxStateEnd-sphinxState
+	mov r0,#ks5360StateEnd-ks5360State
 	bx lr
 ;@----------------------------------------------------------------------------
-svVideoLoadState:		;@ In r0=spxptr, r1=source. Out r0=state size.
+svVideoLoadState:		;@ In r0=svvptr, r1=source. Out r0=state size.
 	.type	svVideoLoadState STT_FUNC
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{r4,r5,lr}
-	mov r5,r0					;@ Store spxptr (r0)
+	mov r5,r0					;@ Store svvptr (r0)
 	mov r4,r1					;@ Store source
 
-	add r0,r5,#sphinxState
-	mov r2,#sphinxStateEnd-sphinxState
+	add r0,r5,#ks5360State
+	mov r2,#ks5360StateEnd-ks5360State
 	bl memCopy
 
-	ldr r0,=DIRTYTILES
-	mov r1,#0
-	mov r2,#0x800
-	bl memset
+	bl clearDirtyTiles
 
 	bl reBankSwitch89AB
 	bl reBankSwitchCDEF
@@ -222,7 +196,7 @@ svVideoLoadState:		;@ In r0=spxptr, r1=source. Out r0=state size.
 svVideoGetStateSize:	;@ Out r0=state size.
 	.type	svVideoGetStateSize STT_FUNC
 ;@----------------------------------------------------------------------------
-	mov r0,#sphinxStateEnd-sphinxState
+	mov r0,#ks5360StateEnd-ks5360State
 	bx lr
 
 	.pool
@@ -233,7 +207,8 @@ svVideoGetStateSize:	;@ Out r0=state size.
 ;@----------------------------------------------------------------------------
 svBufferWindows:
 ;@----------------------------------------------------------------------------
-	ldr r0,[spxptr,#wsvFgWinXPos]	;@ Win pos/size
+//	ldr r0,[svvptr,#wsvFgWinXPos]	;@ Win pos/size
+	ldr r0,=0xA0A00000
 	and r1,r0,#0x000000FF		;@ H start
 	and r2,r0,#0x00FF0000		;@ H end
 	cmp r1,#GAME_WIDTH
@@ -247,7 +222,7 @@ svBufferWindows:
 	orr r1,r1,r2,lsl#8
 	mov r1,r1,ror#24
 	movmi r1,#0
-	strh r1,[spxptr,#windowData]
+	strh r1,[svvptr,#windowData]
 
 	and r1,r0,#0x0000FF00		;@ V start
 	mov r2,r0,lsr#24			;@ V end
@@ -261,15 +236,15 @@ svBufferWindows:
 	cmp r2,r1,lsr#8
 	orr r1,r1,r2
 	movmi r1,#0
-	strh r1,[spxptr,#windowData+2]
+	strh r1,[svvptr,#windowData+2]
 
 	bx lr
 
 ;@----------------------------------------------------------------------------
-IO_R:		;@ I/O read
+svRead:		;@ I/O read
 ;@----------------------------------------------------------------------------
-	sub r2,addy,#0x2000
-	cmp r2,#0x2B
+	sub r2,r0,#0x2000
+	cmp r2,#0x30
 	ldrmi pc,[pc,r2,lsl#2]
 	b svUnknownR
 io_read_tbl:
@@ -307,7 +282,7 @@ io_read_tbl:
 	.long svUnknownR
 	.long joy0_R		;@ 2020: joypad
 	.long _2021r		;@ IO port read
-	.long svUnknownR
+	.long _2022r
 	.long _2023r		;@ Timer value
 	.long _2024r
 	.long _2025r
@@ -316,11 +291,50 @@ io_read_tbl:
 	.long svUnknownR
 	.long svUnknownR
 	.long svUnknownR
+	.long svUnknownR
+	.long svUnknownR
+	.long svUnknownR
+	.long svUnknownR
+	.long svUnknownR
+
+;@----------------------------------------------------------------------------
+svWSUnmappedR:
+;@----------------------------------------------------------------------------
+	mov r11,r11					;@ No$GBA breakpoint
+	stmfd sp!,{svvptr,lr}
+	bl _debugIOUnmappedR
+	ldmfd sp!,{svvptr,lr}
+	ldrb r0,[svvptr,#wsvSOC]
+	cmp r0,#SOC_ASWAN
+	moveq r0,#0x90
+	movne r0,#0x00
+	bx lr
+;@----------------------------------------------------------------------------
+svUnknownR:
+;@----------------------------------------------------------------------------
+	ldr r2,=0x826EBAD0
+;@----------------------------------------------------------------------------
+svImportantR:
+	mov r11,r11					;@ No$GBA breakpoint
+	stmfd sp!,{r0,svvptr,lr}
+	bl _debugIOUnimplR
+	ldmfd sp!,{r0,svvptr,lr}
+;@----------------------------------------------------------------------------
+svRegR:
+	add r2,svvptr,#wsvRegs
+	ldrb r0,[r2,r0]
+	bx lr
+	.pool
 
 ;@----------------------------------------------------------------------------
 _2021r:		;@ IO port read
 ;@----------------------------------------------------------------------------
-//	ldrb r0,sv_ioport
+	ldrb r0,[svvptr,#wsvLinkPortDDR]
+	bx lr
+;@----------------------------------------------------------------------------
+_2022r:		;@ Link Port Data read
+;@----------------------------------------------------------------------------
+	ldrb r0,[svvptr,#wsvLinkPortData]
 	bx lr
 ;@----------------------------------------------------------------------------
 _2023r:		;@ Timer value
@@ -330,34 +344,35 @@ _2023r:		;@ Timer value
 ;@----------------------------------------------------------------------------
 _2024r:		;@ Timer IRQ clear?
 ;@----------------------------------------------------------------------------
-//	ldrb r0,irq_r
+	ldrb r0,[svvptr,#wsvIRQStatus]
 	bic r0,r0,#1
-//	strb r0,irq_r
+	strb r0,[svvptr,#wsvIRQStatus]
 	mov r0,#0
 	bx lr
 ;@----------------------------------------------------------------------------
 _2025r:		;@ DMA IRQ clear?
 ;@----------------------------------------------------------------------------
-//	ldrb r0,irq_r
+	ldrb r0,[svvptr,#wsvIRQStatus]
 	bic r0,r0,#2
-//	strb r0,irq_r
+	strb r0,[svvptr,#wsvIRQStatus]
 	mov r0,#0
 	bx lr
 ;@----------------------------------------------------------------------------
 _2026r:		;@ LCD & IRQs
 ;@----------------------------------------------------------------------------
-//	ldrb r0,lcdctrl
+	ldrb r0,[svvptr,#wsvSystemControl]
 	bx lr
 ;@----------------------------------------------------------------------------
 _2027r:		;@ IRQ bits
 ;@----------------------------------------------------------------------------
-//	ldrb r0,irq_r
+	ldrb r0,[svvptr,#wsvIRQStatus]
 	bx lr
+
 ;@----------------------------------------------------------------------------
-IO_W:		;@ I/O write
+svWrite:	;@ I/O write
 ;@----------------------------------------------------------------------------
-	sub r2,addy,#0x2000
-	cmp r2,#0x2B
+	sub r2,r0,#0x2000
+	cmp r2,#0x30
 	ldrmi pc,[pc,r2,lsl#2]
 	b wsvImportantW
 io_write_tbl:
@@ -404,13 +419,35 @@ io_write_tbl:
 	.long wsvImportantW	;@ Sound DMA...
 	.long wsvImportantW
 	.long wsvImportantW
+	.long wsvImportantW
+	.long wsvImportantW
+	.long wsvImportantW
+	.long wsvImportantW
+	.long wsvImportantW
 
+;@----------------------------------------------------------------------------
+wsvUnknownW:
+;@----------------------------------------------------------------------------
+wsvImportantW:
+;@----------------------------------------------------------------------------
+	add r2,svvptr,#wsvRegs
+	strb r1,[r2,r0]
+	ldr r2,=debugIOUnimplW
+	bx r2
+;@----------------------------------------------------------------------------
+wsvReadOnlyW:
+;@----------------------------------------------------------------------------
+wsvUnmappedW:
+;@----------------------------------------------------------------------------
+	b _debugIOUnmappedW
+;@----------------------------------------------------------------------------
+wsvRegW:
+	add r2,svvptr,#wsvRegs
+	strb r1,[r2,r0]
+	bx lr
 
 ;@----------------------------------------------------------------------------
 _2000w:
-;@----------------------------------------------------------------------------
-;@----------------------------------------------------------------------------
-_2001w:
 ;@----------------------------------------------------------------------------
 ;@----------------------------------------------------------------------------
 _2002w:
@@ -419,6 +456,21 @@ _2002w:
 _2003w:
 ;@----------------------------------------------------------------------------
 	bx lr
+;@----------------------------------------------------------------------------
+_2001w:
+;@----------------------------------------------------------------------------
+;@----------------------------------------------------------------------------
+svRefW:					;@ 0x2001, Last scan line.
+;@----------------------------------------------------------------------------
+	strb r1,[svvptr,#wsvLCDYSize]
+	cmp r1,#0x9E
+	movmi r1,#0x9E
+	cmp r1,#0xC8
+	movpl r1,#0xC8
+	add r1,r1,#1
+	str r1,lineStateLastLine
+	mov r0,r1
+	b setScreenRefresh
 
 ;@----------------------------------------------------------------------------
 _200Dw:		;@ Strange...
@@ -426,29 +478,35 @@ _200Ew:		;@ TV link palette?
 _200Fw:		;@ TV link something
 	bx lr
 ;@----------------------------------------------------------------------------
-_2022w:		;@ IO port write
+_2021w:		;@ IO port write
 ;@----------------------------------------------------------------------------
-//	strb r0,sv_ioport
+	strb r1,[svvptr,#wsvLinkPortDDR]
+	bx lr
+;@----------------------------------------------------------------------------
+_2022w:		;@ Link Port Data write
+;@----------------------------------------------------------------------------
+	strb r1,[svvptr,#wsvLinkPortData]
 	bx lr
 ;@----------------------------------------------------------------------------
 _2023w:		;@ Timer value
 ;@----------------------------------------------------------------------------
-	mov r0,r0,lsl#6
-//	str r0,timerlatch
-//	str r0,timerval
+	strb r1,[svvptr,#wsvIRQTimer]
+	mov r1,r1,lsl#6
+	str r1,[svvptr,#wsvTimerLatch]
+	str r1,[svvptr,#wsvTimerValue]
 	bx lr
 ;@----------------------------------------------------------------------------
 _2026w:		;@ LCD & IRQs
 ;@----------------------------------------------------------------------------
-	ldrb r1,[svvptr,#lcdCtrl]
-	strb r0,[svvptr,#lcdCtrl]
-	eor r1,r0,r1
-	tst r1,#0xE0
-	movne r0,r0,lsr#5
-	movne addy,lr
+	ldrb r0,[svvptr,#wsvSystemControl]
+	strb r1,[svvptr,#wsvSystemControl]
+	eor r0,r0,r1
+	tst r0,#0xE0
+	movne r1,r1,lsr#5
+	mov addy,lr
 	blne BankSwitch89AB_W
-	movne lr,addy
-	ldrb r0,[svvptr,#lcdCtrl]
+	mov lr,addy
+	ldrb r0,[svvptr,#wsvSystemControl]
 
 	mov r1,#0x2840		;@ WIN0, BG2 enable. DISPCNTBUFF startvalue. 0x2840
 	tst r0,#0x08		;@ lcd en?
@@ -478,784 +536,25 @@ ctrl1Line:	.long 0 		;@ When?
 
 
 ;@----------------------------------------------------------------------------
-svReadHigh:					;@ I/O read (0x0100-0xFFFF)
-;@----------------------------------------------------------------------------
-	stmfd sp!,{r0,spxptr,lr}
-	bl _debugIOUnmappedR
-	ldmfd sp!,{r0,spxptr,lr}
-	and r0,r0,#0xFF
-;@----------------------------------------------------------------------------
-svRead:						;@ I/O read (0x00-0xBF)
-;@----------------------------------------------------------------------------
-	cmp r0,#0x100
-	ldrmi pc,[pc,r0,lsl#2]
-	b svReadHigh
-IN_Table:
-	.long svRegR				;@ 0x00 Display control
-	.long svRegR				;@ 0x01 Background color
-	.long svVCountR				;@ 0x02 Current scan line
-	.long svRegR				;@ 0x03 Scan line compare
-	.long svRegR				;@ 0x04 Sprite table address
-	.long svRegR				;@ 0x05 Sprite to start with
-	.long svRegR				;@ 0x06 Sprite count
-	.long svRegR				;@ 0x07 Map table address
-	.long svRegR				;@ 0x08 Window X-Position
-	.long svRegR				;@ 0x09 Window Y-Position
-	.long svRegR				;@ 0x0A Window X-Size
-	.long svRegR				;@ 0x0B Window Y-Size
-	.long svRegR				;@ 0x0C Sprite window X-Position
-	.long svRegR				;@ 0x0D Sprite window Y-Position
-	.long svRegR				;@ 0x0E Sprite window X-Size
-	.long svRegR				;@ 0x0F Sprite window Y-Size
-
-	.long svRegR				;@ 0x10 Bg scroll X
-	.long svRegR				;@ 0x11 Bg scroll Y
-	.long svRegR				;@ 0x12 Fg scroll X
-	.long svRegR				;@ 0x13 Fg scroll Y
-	.long svRegR				;@ 0x14 LCD control (on/off?)
-	.long svRegR				;@ 0x15 LCD icons
-	.long svRegR				;@ 0x16 Total scan lines
-	.long svRegR				;@ 0x17 Vsync line
-	.long svWSUnmappedR			;@ 0x18 ---
-	.long svWSUnmappedR			;@ 0x19 ---
-	.long svUnknownR			;@ 0x1A ???
-	.long svWSUnmappedR			;@ 0x1B ---
-	.long svRegR				;@ 0x1C Pal mono pool 0
-	.long svRegR				;@ 0x1D Pal mono pool 1
-	.long svRegR				;@ 0x1E Pal mono pool 2
-	.long svRegR				;@ 0x1F Pal mono pool 3
-
-	.long svRegR				;@ 0x20 Pal mono 0 low
-	.long svRegR				;@ 0x21 Pal mono 0 high
-	.long svRegR				;@ 0x22 Pal mono 1 low
-	.long svRegR				;@ 0x23 Pal mono 1 high
-	.long svRegR				;@ 0x24 Pal mono 2 low
-	.long svRegR				;@ 0x25 Pal mono 2 high
-	.long svRegR				;@ 0x26 Pal mono 3 low
-	.long svRegR				;@ 0x27 Pal mono 3 high
-	.long svRegR				;@ 0x28 Pal mono 4 low
-	.long svRegR				;@ 0x29 Pal mono 4 high
-	.long svRegR				;@ 0x2A Pal mono 5 low
-	.long svRegR				;@ 0x2B Pal mono 5 high
-	.long svRegR				;@ 0x2C Pal mono 6 low
-	.long svRegR				;@ 0x2D Pal mono 6 high
-	.long svRegR				;@ 0x2E Pal mono 7 low
-	.long svRegR				;@ 0x2F Pal mono 7 high
-
-	.long svRegR				;@ 0x30 Pal mono 8 low
-	.long svRegR				;@ 0x31 Pal mono 8 high
-	.long svRegR				;@ 0x32 Pal mono 9 low
-	.long svRegR				;@ 0x33 Pal mono 9 high
-	.long svRegR				;@ 0x34 Pal mono A low
-	.long svRegR				;@ 0x35 Pal mono A high
-	.long svRegR				;@ 0x36 Pal mono B low
-	.long svRegR				;@ 0x37 Pal mono B high
-	.long svRegR				;@ 0x38 Pal mono C low
-	.long svRegR				;@ 0x39 Pal mono C high
-	.long svRegR				;@ 0x3A Pal mono D low
-	.long svRegR				;@ 0x3B Pal mono D high
-	.long svRegR				;@ 0x3C Pal mono E low
-	.long svRegR				;@ 0x3D Pal mono E high
-	.long svRegR				;@ 0x3E Pal mono F low
-	.long svRegR				;@ 0x3F Pal mono F high
-			;@ DMA registers, only WSC
-	.long svRegR				;@ 0x40 DMA source
-	.long svRegR				;@ 0x41 DMA source
-	.long svRegR				;@ 0x42 DMA source
-	.long svWSUnmappedR			;@ 0x43 ---
-	.long svRegR				;@ 0x44 DMA destination
-	.long svRegR				;@ 0x45 DMA destination
-	.long svRegR				;@ 0x46 DMA length
-	.long svRegR				;@ 0x47 DMA length
-	.long svImportantR			;@ 0x48 DMA control
-	.long svWSUnmappedR			;@ 0x49 ---
-	.long svRegR				;@ 0x4A Sound DMA source
-	.long svRegR				;@ 0x4B Sound DMA source
-	.long svRegR				;@ 0x4C Sound DMA source
-	.long svWSUnmappedR			;@ 0x4D ---
-	.long svRegR				;@ 0x4E Sound DMA length
-	.long svRegR				;@ 0x4F Sound DMA length
-
-	.long svRegR				;@ 0x50 Sound DMA length
-	.long svWSUnmappedR			;@ 0x51 ---
-	.long svRegR				;@ 0x52 Sound DMA control
-	.long svWSUnmappedR			;@ 0x53 ---
-	.long svWSUnmappedR			;@ 0x54 ---
-	.long svWSUnmappedR			;@ 0x55 ---
-	.long svWSUnmappedR			;@ 0x56 ---
-	.long svWSUnmappedR			;@ 0x57 ---
-	.long svWSUnmappedR			;@ 0x58 ---
-	.long svWSUnmappedR			;@ 0x59 ---
-	.long svWSUnmappedR			;@ 0x5A ---
-	.long svWSUnmappedR			;@ 0x5B ---
-	.long svWSUnmappedR			;@ 0x5C ---
-	.long svWSUnmappedR			;@ 0x5D ---
-	.long svWSUnmappedR			;@ 0x5E ---
-	.long svWSUnmappedR			;@ 0x5F ---
-
-	.long svRegR				;@ 0x60 Display mode
-	.long svWSUnmappedR			;@ 0x61 ---
-	.long svImportantR			;@ 0x62 WSC System / Power
-	.long svWSUnmappedR			;@ 0x63 ---
-	.long svWSUnmappedR			;@ 0x64 ---
-	.long svWSUnmappedR			;@ 0x65 ---
-	.long svWSUnmappedR			;@ 0x66 ---
-	.long svWSUnmappedR			;@ 0x67 ---
-	.long svWSUnmappedR			;@ 0x68 ---
-	.long svWSUnmappedR			;@ 0x69 ---
-	.long svImportantR			;@ 0x6A Hyper control
-	.long svImportantR			;@ 0x6B Hyper Chan control
-	.long svWSUnmappedR			;@ 0x6C ---
-	.long svWSUnmappedR			;@ 0x6D ---
-	.long svWSUnmappedR			;@ 0x6E ---
-	.long svWSUnmappedR			;@ 0x6F ---
-
-	.long svImportantR			;@ 0x70 Unknown70
-	.long svImportantR			;@ 0x71 Unknown71
-	.long svImportantR			;@ 0x72 Unknown72
-	.long svImportantR			;@ 0x73 Unknown73
-	.long svImportantR			;@ 0x74 Unknown74
-	.long svImportantR			;@ 0x75 Unknown75
-	.long svImportantR			;@ 0x76 Unknown76
-	.long svImportantR			;@ 0x77 Unknown77
-	.long svWSUnmappedR			;@ 0x78 ---
-	.long svWSUnmappedR			;@ 0x79 ---
-	.long svWSUnmappedR			;@ 0x7A ---
-	.long svWSUnmappedR			;@ 0x7B ---
-	.long svWSUnmappedR			;@ 0x7C ---
-	.long svWSUnmappedR			;@ 0x7D ---
-	.long svWSUnmappedR			;@ 0x7E ---
-	.long svWSUnmappedR			;@ 0x7F ---
-
-	.long svRegR				;@ 0x80 Sound Ch1 pitch low
-	.long svRegR				;@ 0x81 Sound Ch1 pitch high
-	.long svRegR				;@ 0x82 Sound Ch2 pitch low
-	.long svRegR				;@ 0x83 Sound Ch2 pitch high
-	.long svRegR				;@ 0x84 Sound Ch3 pitch low
-	.long svRegR				;@ 0x85 Sound Ch3 pitch high
-	.long svRegR				;@ 0x86 Sound Ch4 pitch low
-	.long svRegR				;@ 0x87 Sound Ch4 pitch high
-	.long svRegR				;@ 0x88 Sound Ch1 volume
-	.long svRegR				;@ 0x89 Sound Ch2 volume
-	.long svRegR				;@ 0x8A Sound Ch3 volume
-	.long svRegR				;@ 0x8B Sound Ch4 volume
-	.long svRegR				;@ 0x8C Sweeep value
-	.long svRegR				;@ 0x8D Sweep time
-	.long svRegR				;@ 0x8E Noise control
-	.long svRegR				;@ 0x8F Wave base
-
-	.long svRegR				;@ 0x90 Sound control
-	.long svRegR				;@ 0x91 Sound output
-	.long svImportantR			;@ 0x92 Noise LFSR value low
-	.long svImportantR			;@ 0x93 Noise LFSR value high
-	.long svRegR				;@ 0x94 Sound voice control
-	.long svRegR				;@ 0x95 Sound Hyper voice
-	.long svUnknownR			;@ 0x96 SND9697
-	.long svUnknownR			;@ 0x97 SND9697
-	.long svUnknownR			;@ 0x98 SND9899
-	.long svUnknownR			;@ 0x99 SND9899
-	.long svUnknownR			;@ 0x9A SND9A
-	.long svUnknownR			;@ 0x9B SND9B
-	.long svUnknownR			;@ 0x9C SND9C
-	.long svUnknownR			;@ 0x9D SND9D
-	.long svImportantR			;@ 0x9E HW Volume
-	.long svWSUnmappedR			;@ 0x9F ---
-
-	.long svRegR				;@ 0xA0 Color or mono HW
-	.long svWSUnmappedR			;@ 0xA1 ---
-	.long svRegR				;@ 0xA2 Timer Control
-	.long svUnknownR			;@ 0xA3 ???
-	.long svRegR				;@ 0xA4 HBlankTimer low
-	.long svRegR				;@ 0xA5 HBlankTimer high
-	.long svRegR				;@ 0xA6 VBlankTimer low
-	.long svRegR				;@ 0xA7 VBlankTimer high
-	.long svRegR				;@ 0xA8 HBlankTimer counter low
-	.long svRegR				;@ 0xA9 HBlankTimer counter high
-	.long svRegR				;@ 0xAA VBlankTimer counter low
-	.long svRegR				;@ 0xAB VBlankTimer counter high
-	.long svUnknownR			;@ 0xAC ???
-	.long svWSUnmappedR			;@ 0xAD ---
-	.long svWSUnmappedR			;@ 0xAE ---
-	.long svWSUnmappedR			;@ 0xAF ---
-
-	.long svRegR				;@ 0xB0 Interrupt base
-	.long svImportantR			;@ 0xB1 Serial data
-	.long svRegR				;@ 0xB2 Interrupt enable
-	.long svSerialStatusR		;@ 0xB3 Serial status
-	.long svRegR				;@ 0xB4 Interrupt status
-	.long joy0_R				;@ 0xB5 keypad
-	.long svZeroR				;@ 0xB6 Interrupt acknowledge
-	.long svUnknownR			;@ 0xB7 ??? NMI ctrl?
-	.long svWSUnmappedR			;@ 0xB8 ---
-	.long svWSUnmappedR			;@ 0xB9 ---
-	.long svUnknownR			;@ 0xBA
-	.long svUnknownR			;@ 0xBB
-	.long svUnknownR			;@ 0xBC
-	.long svUnknownR			;@ 0xBD
-	.long svUnknownR			;@ 0xBE
-	.long svUnknownR			;@ 0xBF ???
-
-;@----------------------------------------------------------------------------
-;@Cartridge					;@ I/O read cart (0xC0-0xFF)
-;@----------------------------------------------------------------------------
-
-	.long BankSwitch4_F_R		;@ 0xC0 Bank ROM 0x40000-0xF0000
-	.long BankSwitch1_R			;@ 0xC1 Bank SRAM 0x10000
-	.long BankSwitch2_R			;@ 0xC2 Bank ROM 0x20000
-	.long BankSwitch3_R			;@ 0xC3 Bank ROM 0x30000
-	.long svImportantR			;@ 0xC4 ext-eeprom data low
-	.long svImportantR			;@ 0xC5 ext-eeprom data high
-	.long svImportantR			;@ 0xC6 ext-eeprom address low
-	.long svImportantR			;@ 0xC7 ext-eeprom address high
-	.long svImportantR			;@ 0xC8 ext-eeprom status
-	.long svUnknownR			;@ 0xC9 ???
-	.long svImportantR			;@ 0xCA RTC status
-	.long svImportantR			;@ 0xCB RTC data read
-	.long svImportantR			;@ 0xCC General purpose input/output enable, bit 3-0.
-	.long svImportantR			;@ 0xCD General purpose input/output data, bit 3-0.
-	.long svImportantR			;@ 0xCE WonderWitch flash
-	.long svRegR				;@ 0xCF Alias to 0xC0
-
-	.long svRegR				;@ 0xD0 Alias to 0xC1
-	.long svRegR				;@ 0xD1 2 more bits for 0xC1
-	.long svRegR				;@ 0xD2 Alias to 0xC2
-	.long svRegR				;@ 0xD3 2 more bits for 0xC2
-	.long svRegR				;@ 0xD4 Alias to 0xC3
-	.long svRegR				;@ 0xD5 2 more bits for 0xC3
-	.long svUnknownR			;@ 0xD6 ???
-	.long svUnknownR			;@ 0xD7 ???
-	.long svUnknownR			;@ 0xD8 ???
-	.long svUnknownR			;@ 0xD9 ???
-	.long svUnknownR			;@ 0xDA ???
-	.long svUnknownR			;@ 0xDB ???
-	.long svUnknownR			;@ 0xDC ???
-	.long svUnknownR			;@ 0xDD ???
-	.long svUnknownR			;@ 0xDE ???
-	.long svUnknownR			;@ 0xDF ???
-
-	.long svUnknownR			;@ 0xE0 ???
-	.long svUnknownR			;@ 0xE1 ???
-	.long svUnknownR			;@ 0xE2 ???
-	.long svUnknownR			;@ 0xE3 ???
-	.long svUnknownR			;@ 0xE4 ???
-	.long svUnknownR			;@ 0xE5 ???
-	.long svUnknownR			;@ 0xE6 ???
-	.long svUnknownR			;@ 0xE7 ???
-	.long svUnknownR			;@ 0xE8 ???
-	.long svUnknownR			;@ 0xE9 ???
-	.long svUnknownR			;@ 0xEA ???
-	.long svUnknownR			;@ 0xEB ???
-	.long svUnknownR			;@ 0xEC ???
-	.long svUnknownR			;@ 0xED ???
-	.long svUnknownR			;@ 0xEE ???
-	.long svUnknownR			;@ 0xEF ???
-
-	.long svUnknownR			;@ 0xF0 ???
-	.long svUnknownR			;@ 0xF1 ???
-	.long svUnknownR			;@ 0xF2 ???
-	.long svUnknownR			;@ 0xF3 ???
-	.long svUnknownR			;@ 0xF4 ???
-	.long svUnknownR			;@ 0xF5 ???
-	.long svUnknownR			;@ 0xF6 ???
-	.long svUnknownR			;@ 0xF7 ???
-	.long svUnknownR			;@ 0xF8 ???
-	.long svUnknownR			;@ 0xF9 ???
-	.long svUnknownR			;@ 0xFA ???
-	.long svUnknownR			;@ 0xFB ???
-	.long svUnknownR			;@ 0xFC ???
-	.long svUnknownR			;@ 0xFD ???
-	.long svUnknownR			;@ 0xFE ???
-	.long svUnknownR			;@ 0xFF ???
-;@----------------------------------------------------------------------------
-svWSUnmappedR:
-;@----------------------------------------------------------------------------
-	mov r11,r11					;@ No$GBA breakpoint
-	stmfd sp!,{spxptr,lr}
-	bl _debugIOUnmappedR
-	ldmfd sp!,{spxptr,lr}
-	ldrb r0,[spxptr,#wsvSOC]
-	cmp r0,#SOC_ASWAN
-	moveq r0,#0x90
-	movne r0,#0x00
-	bx lr
-;@----------------------------------------------------------------------------
-svZeroR:
-;@----------------------------------------------------------------------------
-	stmfd sp!,{lr}
-	bl _debugIOUnmappedR
-	ldmfd sp!,{lr}
-	mov r0,#0x00
-	bx lr
-;@----------------------------------------------------------------------------
-svUnknownR:
-;@----------------------------------------------------------------------------
-	ldr r2,=0x826EBAD0
-;@----------------------------------------------------------------------------
-svImportantR:
-	mov r11,r11					;@ No$GBA breakpoint
-	stmfd sp!,{r0,spxptr,lr}
-	bl _debugIOUnimplR
-	ldmfd sp!,{r0,spxptr,lr}
-;@----------------------------------------------------------------------------
-svRegR:
-	add r2,spxptr,#wsvRegs
-	ldrb r0,[r2,r0]
-	bx lr
-	.pool
-;@----------------------------------------------------------------------------
-svVCountR:					;@ 0x03
-;@----------------------------------------------------------------------------
-	ldrb r0,[spxptr,#scanline]
-	bx lr
-;@----------------------------------------------------------------------------
-svSerialStatusR:			;@ 0xB3
-;@----------------------------------------------------------------------------
-	ldrb r0,[spxptr,#wsvSerialStatus]
-	and r0,r0,#0xE0				;@ Mask out write bits.
-	orr r0,r0,#4				;@ Hack! Send buffer always empty.
-	bx lr
-
-;@----------------------------------------------------------------------------
-BankSwitch4_F_R:			;@ 0xC0
-;@----------------------------------------------------------------------------
-	ldrb r0,[spxptr,wsvBnk0SlctX]
-	bx lr
-;@----------------------------------------------------------------------------
-BankSwitch1_R:				;@ 0xC1
-;@----------------------------------------------------------------------------
-	ldrb r0,[spxptr,wsvBnk1SlctX]
-	bx lr
-;@----------------------------------------------------------------------------
-BankSwitch2_R:				;@ 0xC2
-;@----------------------------------------------------------------------------
-	ldrb r0,[spxptr,wsvBnk2SlctX]
-	bx lr
-;@----------------------------------------------------------------------------
-BankSwitch3_R:				;@ 0xC3
-;@----------------------------------------------------------------------------
-	ldrb r0,[spxptr,wsvBnk3SlctX]
-	bx lr
-
-;@----------------------------------------------------------------------------
-svWriteHigh:				;@ I/O write (0x0100-0xFFFF)
-;@----------------------------------------------------------------------------
-	stmfd sp!,{r0,r1,spxptr,lr}
-	bl _debugIOUnmappedW
-	ldmfd sp!,{r0,r1,spxptr,lr}
-	and r0,r0,#0xFF
-;@----------------------------------------------------------------------------
-svWrite:					;@ I/O write (0x00-0xBF)
-;@----------------------------------------------------------------------------
-	cmp r0,#0x100
-	ldrmi pc,[pc,r0,lsl#2]
-	b svWriteHigh
-OUT_Table:
-	.long wsvRegW				;@ 0x00 Display control
-	.long wsvRegW				;@ 0x01 Background color
-	.long wsvReadOnlyW			;@ 0x02 Current scan line
-	.long wsvRegW				;@ 0x03 Scan line compare
-	.long wsvRegW				;@ 0x04 Sprite table address
-	.long wsvSpriteFirstW		;@ 0x05 Sprite to start with
-	.long wsvRegW				;@ 0x06 Sprite count
-	.long wsvRegW				;@ 0x07 Map table address
-	.long wsvRegW				;@ 0x08 Window X-Position
-	.long wsvRegW				;@ 0x09 Window Y-Position
-	.long wsvRegW				;@ 0x0A Window X-Size
-	.long wsvRegW				;@ 0x0B Window Y-Size
-	.long wsvRegW				;@ 0x0C Sprite window X-Position
-	.long wsvRegW				;@ 0x0D Sprite window Y-Position
-	.long wsvRegW				;@ 0x0E Sprite window X-Size
-	.long wsvRegW				;@ 0x0F Sprite window Y-Size
-
-	.long wsvBgScrXW			;@ 0x10 Bg scroll X
-	.long wsvBgScrYW			;@ 0x11 Bg scroll Y
-	.long wsvFgScrXW			;@ 0x12 Fg scroll X
-	.long wsvFgScrYW			;@ 0x13 Fg scroll Y
-	.long wsvRegW				;@ 0x14 LCD control (on/off?)
-	.long wsvLCDIconW			;@ 0x15 LCD icons
-	.long svRefW				;@ 0x16 Total scan lines
-	.long wsvRegW				;@ 0x17 Vsync line
-	.long wsvUnmappedW			;@ 0x18 ---
-	.long wsvUnmappedW			;@ 0x19 ---
-	.long wsvUnknownW			;@ 0x1A ???
-	.long wsvUnmappedW			;@ 0x1B ---
-	.long wsvRegW				;@ 0x1C Pal mono pool 0
-	.long wsvRegW				;@ 0x1D Pal mono pool 1
-	.long wsvRegW				;@ 0x1E Pal mono pool 2
-	.long wsvRegW				;@ 0x1F Pal mono pool 3
-
-	.long wsvRegW				;@ 0x20 Pal mono 0 low
-	.long wsvRegW				;@ 0x21 Pal mono 0 high
-	.long wsvRegW				;@ 0x22 Pal mono 1 low
-	.long wsvRegW				;@ 0x23 Pal mono 1 high
-	.long wsvRegW				;@ 0x24 Pal mono 2 low
-	.long wsvRegW				;@ 0x25 Pal mono 2 high
-	.long wsvRegW				;@ 0x26 Pal mono 3 low
-	.long wsvRegW				;@ 0x27 Pal mono 3 high
-	.long wsvRegW				;@ 0x28 Pal mono 4 low
-	.long wsvRegW				;@ 0x29 Pal mono 4 high
-	.long wsvRegW				;@ 0x2A Pal mono 5 low
-	.long wsvRegW				;@ 0x2B Pal mono 5 high
-	.long wsvRegW				;@ 0x2C Pal mono 6 low
-	.long wsvRegW				;@ 0x2D Pal mono 6 high
-	.long wsvRegW				;@ 0x2E Pal mono 7 low
-	.long wsvRegW				;@ 0x2F Pal mono 7 high
-
-	.long wsvRegW				;@ 0x30 Pal mono 8 low
-	.long wsvRegW				;@ 0x31 Pal mono 8 high
-	.long wsvRegW				;@ 0x32 Pal mono 9 low
-	.long wsvRegW				;@ 0x33 Pal mono 9 high
-	.long wsvRegW				;@ 0x34 Pal mono A low
-	.long wsvRegW				;@ 0x35 Pal mono A high
-	.long wsvRegW				;@ 0x36 Pal mono B low
-	.long wsvRegW				;@ 0x37 Pal mono B high
-	.long wsvRegW				;@ 0x38 Pal mono C low
-	.long wsvRegW				;@ 0x39 Pal mono C high
-	.long wsvRegW				;@ 0x3A Pal mono D low
-	.long wsvRegW				;@ 0x3B Pal mono D high
-	.long wsvRegW				;@ 0x3C Pal mono E low
-	.long wsvRegW				;@ 0x3D Pal mono E high
-	.long wsvRegW				;@ 0x3E Pal mono F low
-	.long wsvRegW				;@ 0x3F Pal mono F high
-			;@ DMA registers, only WSC
-	.long wsvDMASourceW			;@ 0x40	DMA source
-	.long wsvRegW				;@ 0x41 DMA src
-	.long wsvRegW				;@ 0x42 DMA src
-	.long wsvRegW				;@ 0x43 ---
-	.long wsvDMADestW			;@ 0x44 DMA destination
-	.long wsvRegW				;@ 0x45 DMA dst
-	.long wsvDMALengthW			;@ 0x46 DMA length
-	.long wsvRegW				;@ 0x47 DMA len
-	.long wsvDMACtrlW			;@ 0x48 DMA control
-	.long wsvRegW				;@ 0x49 DMA ctrl
-	.long wsvRegW				;@ 0x4A	Sound DMA source
-	.long wsvRegW				;@ 0x4B Sound DMA src
-	.long wsvRegW				;@ 0x4C Sound DMA src
-	.long wsvRegW				;@ 0x4D Sound DMA src
-	.long wsvRegW				;@ 0x4E Sound DMA length
-	.long wsvRegW				;@ 0x4F Sound DMA len
-
-	.long wsvRegW				;@ 0x50 Sound DMA len
-	.long wsvRegW				;@ 0x51 Sound DMA len
-	.long wsvSndDMACtrlW		;@ 0x52 Sound DMA control
-	.long wsvUnmappedW			;@ 0x53 ---
-	.long wsvUnmappedW			;@ 0x54 ---
-	.long wsvUnmappedW			;@ 0x55 ---
-	.long wsvUnmappedW			;@ 0x56 ---
-	.long wsvUnmappedW			;@ 0x57 ---
-	.long wsvUnmappedW			;@ 0x58 ---
-	.long wsvUnmappedW			;@ 0x59 ---
-	.long wsvUnmappedW			;@ 0x5A ---
-	.long wsvUnmappedW			;@ 0x5B ---
-	.long wsvUnmappedW			;@ 0x5C ---
-	.long wsvUnmappedW			;@ 0x5D ---
-	.long wsvUnmappedW			;@ 0x5E ---
-	.long wsvUnmappedW			;@ 0x5F ---
-
-	.long wsvVideoModeW			;@ 0x60 Display mode
-	.long wsvUnmappedW			;@ 0x61 ---
-	.long wsvImportantW			;@ 0x62 SwanCrystal/Power off
-	.long wsvUnmappedW			;@ 0x63 ---
-	.long wsvImportantW			;@ 0x64 Left channel Hyper Voice (lower byte)
-	.long wsvImportantW			;@ 0x65 Left channel Hyper Voice (upper byte)
-	.long wsvImportantW			;@ 0x66 Right channel Hyper Voice (lower byte)
-	.long wsvImportantW			;@ 0x67 Right channel Hyper Voice (upper byte)
-	.long wsvImportantW			;@ 0x68 Hyper Voice Shadow (lower byte)
-	.long wsvImportantW			;@ 0x69 Hyper Voice Shadow (upper byte)
-	.long wsvImportantW			;@ 0x6A Hyper control
-	.long wsvImportantW			;@ 0x6B Hyper Chan control
-	.long wsvUnmappedW			;@ 0x6C ---
-	.long wsvUnmappedW			;@ 0x6D ---
-	.long wsvUnmappedW			;@ 0x6E ---
-	.long wsvUnmappedW			;@ 0x6F ---
-
-	.long wsvReadOnlyW			;@ 0x70 Unknown70
-	.long wsvReadOnlyW			;@ 0x71 Unknown71
-	.long wsvReadOnlyW			;@ 0x72 Unknown72
-	.long wsvReadOnlyW			;@ 0x73 Unknown73
-	.long wsvReadOnlyW			;@ 0x74 Unknown74
-	.long wsvReadOnlyW			;@ 0x75 Unknown75
-	.long wsvReadOnlyW			;@ 0x76 Unknown76
-	.long wsvReadOnlyW			;@ 0x77 Unknown77
-	.long wsvUnmappedW			;@ 0x78 ---
-	.long wsvUnmappedW			;@ 0x79 ---
-	.long wsvUnmappedW			;@ 0x7A ---
-	.long wsvUnmappedW			;@ 0x7B ---
-	.long wsvUnmappedW			;@ 0x7C ---
-	.long wsvUnmappedW			;@ 0x7D ---
-	.long wsvUnmappedW			;@ 0x7E ---
-	.long wsvUnmappedW			;@ 0x7F ---
-
-	.long wsvRegW				;@ 0x80 Sound Ch1 pitch low
-	.long wsvFreqW				;@ 0x81 Sound Ch1 pitch high
-	.long wsvRegW				;@ 0x82 Sound Ch2 pitch low
-	.long wsvFreqW				;@ 0x83 Sound Ch2 pitch high
-	.long wsvRegW				;@ 0x84 Sound Ch3 pitch low
-	.long wsvFreqW				;@ 0x85 Sound Ch3 pitch high
-	.long wsvRegW				;@ 0x86 Sound Ch4 pitch low
-	.long wsvFreqW				;@ 0x87 Sound Ch4 pitch high
-	.long wsvRegW				;@ 0x88 Sound Ch1 volume
-	.long wsvRegW				;@ 0x89 Sound Ch2 volume
-	.long wsvRegW				;@ 0x8A Sound Ch3 volume
-	.long wsvRegW				;@ 0x8B Sound Ch4 volume
-	.long wsvRegW				;@ 0x8C Sweeep value
-	.long wsvSweepTimeW			;@ 0x8D Sweep time
-	.long wsvRegW				;@ 0x8E Noise control
-	.long wsvRegW				;@ 0x8F Wave base
-
-	.long wsvRegW				;@ 0x90 Sound control
-	.long wsvSoundOutputW		;@ 0x91 Sound output
-	.long wsvReadOnlyW			;@ 0x92 Noise LFSR value low
-	.long wsvReadOnlyW			;@ 0x93 Noise LFSR value high
-	.long wsvRegW				;@ 0x94 Sound voice control
-	.long wsvRegW				;@ 0x95 Sound Hyper voice
-	.long wsvImportantW			;@ 0x96 SND9697
-	.long wsvImportantW			;@ 0x97 SND9697
-	.long wsvImportantW			;@ 0x98 SND9899
-	.long wsvImportantW			;@ 0x99 SND9899
-	.long wsvReadOnlyW			;@ 0x9A SND9A
-	.long wsvReadOnlyW			;@ 0x9B SND9B
-	.long wsvReadOnlyW			;@ 0x9C SND9C
-	.long wsvReadOnlyW			;@ 0x9D SND9D
-	.long wsvImportantW			;@ 0x9E HW Volume
-	.long wsvUnmappedW			;@ 0x9F ---
-
-	.long wsvHW					;@ 0xA0 Hardware type, SOC_ASWAN / SOC_SPHINX.
-	.long wsvUnmappedW			;@ 0xA1 ---
-	.long wsvTimerCtrlW			;@ 0xA2 Timer control
-	.long wsvUnknownW			;@ 0xA3 ???
-	.long wsvHTimerLowW			;@ 0xA4 HBlank timer low
-	.long wsvHTimerHighW		;@ 0xA5 HBlank timer high
-	.long wsvVTimerLowW			;@ 0xA6 VBlank timer low
-	.long wsvVTimerHighW		;@ 0xA7 VBlank timer high
-	.long wsvReadOnlyW			;@ 0xA8 HBlank counter low
-	.long wsvReadOnlyW			;@ 0xA9 HBlank counter high
-	.long wsvReadOnlyW			;@ 0xAA VBlank counter low
-	.long wsvReadOnlyW			;@ 0xAB VBlank counter high
-	.long wsvUnknownW			;@ 0xAC ???
-	.long wsvUnmappedW			;@ 0xAD ---
-	.long wsvUnmappedW			;@ 0xAE ---
-	.long wsvUnmappedW			;@ 0xAF ---
-
-	.long wsvRegW				;@ 0xB0 Interrupt base
-	.long wsvImportantW			;@ 0xB1 Serial data
-	.long wsvIntEnableW			;@ 0xB2 Interrupt enable
-	.long wsvSerialStatusW		;@ 0xB3 Serial status
-	.long wsvReadOnlyW			;@ 0xB4 Interrupt status
-	.long wsvRegW				;@ 0xB5 Input Controls
-	.long wsvIntAckW			;@ 0xB6 Interrupt acknowledge
-	.long wsvUnknownW			;@ 0xB7 ??? NMI ctrl?
-	.long wsvUnmappedW			;@ 0xB8 ---
-	.long wsvUnmappedW			;@ 0xB9 ---
-	.long wsvUnmappedW			;@ 0xBA ---
-	.long wsvUnmappedW			;@ 0xBB ---
-	.long wsvUnmappedW			;@ 0xBC ---
-	.long wsvUnmappedW			;@ 0xBD ---
-	.long wsvUnmappedW			;@ 0xBE ---
-	.long wsvUnknownW			;@ 0xBF ???
-
-;@----------------------------------------------------------------------------
-;@Cartridge					;@ I/O write cart (0xC0-0xFF)
-;@----------------------------------------------------------------------------
-
-	.long wsvImportantW			;@ 0xC0 Bank switch 0x40000-0xF0000
-	.long wsvImportantW			;@ 0xC1 Bank switch 0x10000 (SRAM)
-	.long wsvImportantW			;@ 0xC2 Bank switch 0x20000
-	.long wsvImportantW			;@ 0xC3 Bank switch 0x30000
-	.long wsvImportantW			;@ 0xC4 ext-eeprom data low
-	.long wsvImportantW			;@ 0xC5 ext-eeprom data high
-	.long wsvImportantW			;@ 0xC6 ext-eeprom address low
-	.long wsvImportantW			;@ 0xC7 ext-eeprom address high
-	.long wsvImportantW			;@ 0xC8 ext-eeprom command
-	.long wsvImportantW			;@ 0xC9 ???
-	.long wsvImportantW			;@ 0xCA RTC command
-	.long wsvImportantW			;@ 0xCB RTC data write
-	.long wsvImportantW			;@ 0xCC General purpose input/output enable, bit 3-0.
-	.long wsvImportantW			;@ 0xCD General purpose input/output data, bit 3-0.
-	.long wsvImportantW			;@ 0xCE WonderWitch flash
-	.long wsvUnknownW			;@ 0xCF Alias to 0xC0
-
-	.long wsvUnknownW			;@ 0xD0 Alias to 0xC1
-	.long wsvUnknownW			;@ 0xD1 2 more bits for 0xC1
-	.long wsvUnknownW			;@ 0xD2 Alias to 0xC2
-	.long wsvUnknownW			;@ 0xD3 2 more bits for 0xC2
-	.long wsvUnknownW			;@ 0xD4 Alias to 0xC3
-	.long wsvUnknownW			;@ 0xD5 2 more bits for 0xC3
-	.long wsvUnknownW			;@ 0xD6 ???
-	.long wsvUnknownW			;@ 0xD7 ???
-	.long wsvUnknownW			;@ 0xD8 ???
-	.long wsvUnknownW			;@ 0xD9 ???
-	.long wsvUnknownW			;@ 0xDA ???
-	.long wsvUnknownW			;@ 0xDB ???
-	.long wsvUnknownW			;@ 0xDC ???
-	.long wsvUnknownW			;@ 0xDD ???
-	.long wsvUnknownW			;@ 0xDE ???
-	.long wsvUnknownW			;@ 0xDF ???
-
-	.long wsvUnknownW			;@ 0xE0 ???
-	.long wsvUnknownW			;@ 0xE1 ???
-	.long wsvUnknownW			;@ 0xE2 ???
-	.long wsvUnknownW			;@ 0xE3 ???
-	.long wsvUnknownW			;@ 0xE4 ???
-	.long wsvUnknownW			;@ 0xE5 ???
-	.long wsvUnknownW			;@ 0xE6 ???
-	.long wsvUnknownW			;@ 0xE7 ???
-	.long wsvUnknownW			;@ 0xE8 ???
-	.long wsvUnknownW			;@ 0xE9 ???
-	.long wsvUnknownW			;@ 0xEA ???
-	.long wsvUnknownW			;@ 0xEB ???
-	.long wsvUnknownW			;@ 0xEC ???
-	.long wsvUnknownW			;@ 0xED ???
-	.long wsvUnknownW			;@ 0xEE ???
-	.long wsvUnknownW			;@ 0xEF ???
-
-	.long wsvUnknownW			;@ 0xF0 ???
-	.long wsvUnknownW			;@ 0xF1 ???
-	.long wsvUnknownW			;@ 0xF2 ???
-	.long wsvUnknownW			;@ 0xF3 ???
-	.long wsvUnknownW			;@ 0xF4 ???
-	.long wsvUnknownW			;@ 0xF5 ???
-	.long wsvUnknownW			;@ 0xF6 ???
-	.long wsvUnknownW			;@ 0xF7 ???
-	.long wsvUnknownW			;@ 0xF8 ???
-	.long wsvUnknownW			;@ 0xF9 ???
-	.long wsvUnknownW			;@ 0xFA ???
-	.long wsvUnknownW			;@ 0xFB ???
-	.long wsvUnknownW			;@ 0xFC ???
-	.long wsvUnknownW			;@ 0xFD ???
-	.long wsvUnknownW			;@ 0xFE ???
-	.long wsvUnknownW			;@ 0xFF ???
-
-;@----------------------------------------------------------------------------
-wsvUnknownW:
-;@----------------------------------------------------------------------------
-wsvImportantW:
-;@----------------------------------------------------------------------------
-	add r2,spxptr,#wsvRegs
-	strb r1,[r2,r0]
-	ldr r2,=debugIOUnimplW
-	bx r2
-;@----------------------------------------------------------------------------
-wsvReadOnlyW:
-;@----------------------------------------------------------------------------
-wsvUnmappedW:
-;@----------------------------------------------------------------------------
-	b _debugIOUnmappedW
-;@----------------------------------------------------------------------------
-wsvRegW:
-	add r2,spxptr,#wsvRegs
-	strb r1,[r2,r0]
-	bx lr
-
-;@----------------------------------------------------------------------------
-wsvSpriteTblAdrW:			;@ 0x04, Sprite Table Address
-;@----------------------------------------------------------------------------
-	ldrb r0,[spxptr,#wsvVideoMode]
-	tst r0,#0x80				;@ Color mode?
-	andne r1,r1,#0x3F
-	andeq r1,r1,#0x1F
-	strb r1,[spxptr,#wsvSprTblAdr]
-	bx lr
-;@----------------------------------------------------------------------------
-wsvSpriteFirstW:			;@ 0x05, First Sprite
-;@----------------------------------------------------------------------------
-	and r1,r1,#0x7F
-	strb r1,[spxptr,#wsvSpriteFirst]
-	bx lr
-;@----------------------------------------------------------------------------
-wsvBgScrXW:					;@ 0x10, Background Horizontal Scroll register
-;@----------------------------------------------------------------------------
-;@----------------------------------------------------------------------------
-wsvBgScrYW:					;@ 0x11, Background Vertical Scroll register
-;@----------------------------------------------------------------------------
-;@----------------------------------------------------------------------------
-wsvFgScrXW:					;@ 0x12, Foreground Horizontal Scroll register
-;@----------------------------------------------------------------------------
-;@----------------------------------------------------------------------------
-wsvFgScrYW:					;@ 0x13, Foreground Vertical Scroll register
-;@----------------------------------------------------------------------------
-	ldr r2,[spxptr,#wsvBgXScroll]
-	add r0,r0,#wsvRegs
-	strb r1,[spxptr,r0]
-
-scrollCnt:
-	ldr r1,[spxptr,#scanline]	;@ r1=scanline
-	add r1,r1,#1
-	cmp r1,#146
-	movhi r1,#146
-	ldr r0,[spxptr,#scrollLine]
-	subs r0,r1,r0
-	strhi r1,[spxptr,#scrollLine]
-
-	ldr r3,[spxptr,#scrollBuff]
-	add r1,r3,r1,lsl#2
-sy2:
-	stmdbhi r1!,{r2}			;@ Fill backwards from scanline to lastline
-	subs r0,r0,#1
-	bhi sy2
-	bx lr
-
-;@----------------------------------------------------------------------------
-wsvLCDIconW:				;@ 0x15, Enable/disable LCD icons
-;@----------------------------------------------------------------------------
-	strb r1,[spxptr,#wsvLCDIcons]
-	ands r1,r1,#6
-	bxeq lr
-	cmp r1,#2
-	movne r1,#0
-	strb r1,[spxptr,#wsvOrientation]
-	bx lr
-;@----------------------------------------------------------------------------
-svRefW:					;@ 0x16, Last scan line.
-;@----------------------------------------------------------------------------
-	strb r1,[spxptr,#wsvTotalLines]
-	cmp r1,#0x9E
-	movmi r1,#0x9E
-	cmp r1,#0xC8
-	movpl r1,#0xC8
-	add r1,r1,#1
-	str r1,lineStateLastLine
-	mov r0,r1
-	b setScreenRefresh
-;@----------------------------------------------------------------------------
-wsvDMASourceW:				;@ 0x40, only WSC.
-;@----------------------------------------------------------------------------
-	bic r1,r1,#0x01
-	strb r1,[spxptr,#wsvDMASource]
-	bx lr
-;@----------------------------------------------------------------------------
-wsvDMADestW:				;@ 0x44, only WSC.
-;@----------------------------------------------------------------------------
-	bic r1,r1,#0x01
-	strb r1,[spxptr,#wsvDMADest]
-	bx lr
-;@----------------------------------------------------------------------------
-wsvDMALengthW:				;@ 0x46, only WSC.
-;@----------------------------------------------------------------------------
-	bic r1,r1,#0x01
-	strb r1,[spxptr,#wsvDMALength]
-	bx lr
-;@----------------------------------------------------------------------------
 wsvDMACtrlW:				;@ 0x48, only WSC, word transfer. steals 5+2n cycles.
 ;@----------------------------------------------------------------------------
 	and r1,r1,#0xC0
-	strb r1,[spxptr,#wsvDMACtrl]
+	strb r1,[svvptr,#wsvDMACtrl]
 	tst r1,#0x80				;@ Start?
 	bxeq lr
 
 	stmfd sp!,{r4-r8,lr}
 	and r8,r1,#0x40				;@ Inc/dec
 	rsb r8,r8,#0x20
-	mov r7,spxptr
-	ldr r4,[spxptr,#wsvDMASource]
+	mov r7,svvptr
+	ldrh r4,[svvptr,#wsvDMASrcLow]
 
-	ldrh r5,[spxptr,#wsvDMADest];@ r5=destination
+	ldrh r5,[svvptr,#wsvDMADstLow];@ r5=destination
 	mov r5,r5,lsl#16
 
 	sub cycles,cycles,#5*CYCLE
-	ldrh r6,[spxptr,#wsvDMALength]	;@ r6=length
-	cmp r6,#0
-	beq dmaEnd
+	ldrb r6,[svvptr,#wsvDMALen]	;@ r6=length
+	mov r6,r6,lsl#7
 	sub cycles,cycles,r6,lsl#CYC_SHIFT
 
 dmaLoop:
@@ -1269,187 +568,63 @@ dmaLoop:
 	subs r6,r6,#2
 	bne dmaLoop
 
-	mov spxptr,r7
-	str r4,[spxptr,#wsvDMASource]
+	mov svvptr,r7
+	strh r4,[svvptr,#wsvDMASrcLow]
 	mov r5,r5,lsr#16
-	strh r5,[spxptr,#wsvDMADest]
+	strh r5,[svvptr,#wsvDMADstLow]
 
-	strh r6,[spxptr,#wsvDMALength]
+	strb r6,[svvptr,#wsvDMALen]
 	rsb r8,r8,#0x20
-	strb r8,[spxptr,#wsvDMACtrl]
+	strb r8,[svvptr,#wsvDMACtrl]
 dmaEnd:
 
 	ldmfd sp!,{r4-r8,lr}
 	bx lr
-;@----------------------------------------------------------------------------
-wsvSndDMACtrlW:				;@ 0x52, only WSC. steals 2n cycles.
-;@----------------------------------------------------------------------------
-	and r1,r1,#0xDF
-	strb r1,[spxptr,#wsvSndDMACtrl]
-	tst r1,#0x80
-	bxeq lr
-	ldr r1,[spxptr,#wsvSndDMASrc]
-	str r1,[spxptr,#sndDmaSource]
-	ldr r1,[spxptr,#wsvSndDMALen]
-	str r1,[spxptr,#sndDmaLength]
-	bx lr
-;@----------------------------------------------------------------------------
-wsvVideoModeW:				;@ 0x60, Video mode, WSColor
-;@----------------------------------------------------------------------------
-	ldrb r0,[spxptr,#wsvVideoMode]
-	strb r1,[spxptr,#wsvVideoMode]
-	eor r0,r0,r1
-	tst r0,#0x80				;@ Color mode changed?
-	bx lr
-;@----------------------------------------------------------------------------
-wsvFreqW:					;@ 0x81,0x83,0x85,0x87 Sound frequency high
-;@----------------------------------------------------------------------------
-	and r1,r1,#7				;@ Only low 3 bits
-	add r2,spxptr,#wsvRegs
-	strb r1,[r2,r0]
-	bx lr
-;@----------------------------------------------------------------------------
-wsvSweepTimeW:				;@ 0x8B Sound sweep time
-;@----------------------------------------------------------------------------
-	and r1,r1,#0x1F				;@ Only low 5 bits
-	strb r1,[spxptr,#wsvSweepTime]
-	bx lr
-;@----------------------------------------------------------------------------
-wsvSoundOutputW:			;@ 0x91 Sound ouput
-;@----------------------------------------------------------------------------
-	ldrb r0,[spxptr,#wsvSoundOutput]
-	and r1,r1,#0x0F				;@ Only low 4 bits
-	and r0,r0,#0x80				;@ Keep Headphones bit
-	orr r1,r1,r0
-	strb r1,[spxptr,#wsvSoundOutput]
-	bx lr
-;@----------------------------------------------------------------------------
-wsvHW:						;@ 0xA0, Color/Mono, boot rom lock
-;@----------------------------------------------------------------------------
-	ldrb r0,[spxptr,#wsvSystemCtrl1]
-	and r0,r0,#0x83				;@ These can't be changed once set.
-	and r1,r1,#0x8D				;@ Only these bits can be set.
-	orr r1,r1,r0
-	strb r1,[spxptr,#wsvSystemCtrl1]
-	eor r0,r0,r1
-	tst r0,#1					;@ Boot rom locked?
-	bx lr
-
-;@----------------------------------------------------------------------------
-wsvTimerCtrlW:				;@ 0xA2 Timer control
-;@----------------------------------------------------------------------------
-	bx lr
-;@----------------------------------------------------------------------------
-wsvHTimerLowW:				;@ 0xA4 HBlank timer low
-;@----------------------------------------------------------------------------
-	bx lr
-;@----------------------------------------------------------------------------
-wsvHTimerHighW:				;@ 0xA5 HBlank timer high
-;@----------------------------------------------------------------------------
-	bx lr
-;@----------------------------------------------------------------------------
-wsvVTimerLowW:				;@ 0xA6 VBlank timer low
-;@----------------------------------------------------------------------------
-	bx lr
-;@----------------------------------------------------------------------------
-wsvVTimerHighW:				;@ 0xA7 VBlank timer high
-;@----------------------------------------------------------------------------
-	bx lr
-;@----------------------------------------------------------------------------
-wsvIntEnableW:				;@ 0xB2
-;@----------------------------------------------------------------------------
-	strb r1,[spxptr,#wsvInterruptEnable]
-	ldrb r0,[spxptr,#wsvInterruptStatus]
-	b svUpdateIrqEnable
-;@----------------------------------------------------------------------------
-wsvSerialStatusW:			;@ 0xB3
-;@----------------------------------------------------------------------------
-	b wsvImportantW
-;@----------------------------------------------------------------------------
-wsvIntAckW:					;@ 0xB6
-;@----------------------------------------------------------------------------
-	ldrb r0,[spxptr,#wsvInterruptStatus]
-	bic r0,r0,r1
-	b svSetInterruptStatus
-;@----------------------------------------------------------------------------
-svConvertTileMaps:			;@ r0 = destination
-;@----------------------------------------------------------------------------
-	stmfd sp!,{r4-r11,lr}
-
-	ldr r5,=0xFE00FE00
-	ldr r6,=0x00010001
-	ldrb r7,[spxptr,#wsvMapTblAdr]
-	ldr r10,[spxptr,#gfxRAM]
-
-	ldrb r1,[spxptr,#wsvVideoMode]
-	tst r1,#0x80				;@ Color Mode / 64kB RAM?
-	andeq r7,r7,#0x77
-	adr lr,tMapRet
-	tst r1,#0x40				;@ 4 bit planes?
-	b bgMono
-
-tMapRet:
-	ldmfd sp!,{r4-r11,pc}
 
 ;@----------------------------------------------------------------------------
 newFrame:					;@ Called before line 0
 ;@----------------------------------------------------------------------------
 	bx lr
 ;@----------------------------------------------------------------------------
-midFrame:
-;@----------------------------------------------------------------------------
-	stmfd sp!,{lr}
-	bl svBufferWindows
-	ldrb r0,[spxptr,#wsvDispCtrl]
-	strb r0,[spxptr,#wsvLatchedDispCtrl]
-
-	ldmfd sp!,{pc}
-;@----------------------------------------------------------------------------
 endFrame:
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{lr}
-	ldr r2,[spxptr,#wsvBgXScroll]
-	bl scrollCnt
+//	ldr r2,[svvptr,#wsvBgXScroll]
+//	bl scrollCnt
 	bl endFrameGfx
 
-	ldrb r0,[spxptr,#wsvInterruptStatus]
-	ldrb r2,[spxptr,#wsvTimerControl]
-	tst r2,#0x4						;@ VBlank timer enabled?
+	ldrb r0,[svvptr,#wsvSystemControl]
+	tst r0,#0x1						;@ VBlank timer enabled?
 	beq noTimerVBlIrq
-	ldrh r1,[spxptr,#wsvVBlCounter]
-	subs r1,r1,#1
-	bne noVBlIrq
-	orr r0,r0,#0x20					;@ #5 = VBlank timer
-	tst r2,#0x8						;@ Repeat?
-	biceq r2,r2,#0x4
-	strbeq r2,[spxptr,#wsvTimerControl]
-	ldrhne r1,[spxptr,#wsvVBlTimerFreq]
-noVBlIrq:
-	strhpl r1,[spxptr,#wsvVBlCounter]
+	mov lr,pc
+	ldr pc,[svvptr,#nmiFunction]
 noTimerVBlIrq:
-	orr r0,r0,#0x40					;@ #6 = VBlank
-	bl svSetInterruptStatus
 
 	ldmfd sp!,{pc}
 
 ;@----------------------------------------------------------------------------
 frameEndHook:
+	stmfd sp!,{lr}
 	mov r0,#0
-	str r0,[spxptr,#scrollLine]
+	mov lr,pc
+	ldr pc,[svvptr,#nmiFunction]
+	ldmfd sp!,{lr}
+
+	mov r0,#0
+	str r0,[svvptr,#scrollLine]
 
 	adr r2,lineStateTable
 	ldr r1,[r2],#4
 	mov r0,#-1
-	stmia spxptr,{r0-r2}		;@ Reset scanline, nextChange & lineState
+	stmia svvptr,{r0-r2}		;@ Reset scanline, nextChange & lineState
 	bx lr
 
 ;@----------------------------------------------------------------------------
 lineStateTable:
 	.long 0, newFrame			;@ zeroLine
-	.long 72, midFrame			;@ Middle of screen
-	.long 144, endFrame			;@ After last visible scanline
+	.long 160, endFrame			;@ After last visible scanline
 lineStateLastLine:
-	.long 159, frameEndHook		;@ totalScanlines
+	.long 164, frameEndHook		;@ totalScanlines
 ;@----------------------------------------------------------------------------
 #ifdef GBA
 	.section .iwram, "ax", %progbits	;@ For the GBA
@@ -1458,9 +633,9 @@ lineStateLastLine:
 ;@----------------------------------------------------------------------------
 redoScanline:
 ;@----------------------------------------------------------------------------
-	ldr r2,[spxptr,#lineState]
+	ldr r2,[svvptr,#lineState]
 	ldmia r2!,{r0,r1}
-	stmib spxptr,{r1,r2}		;@ Write nextLineChange & lineState
+	stmib svvptr,{r1,r2}		;@ Write nextLineChange & lineState
 	stmfd sp!,{lr}
 	mov lr,pc
 	bx r0
@@ -1468,135 +643,50 @@ redoScanline:
 ;@----------------------------------------------------------------------------
 svDoScanline:
 ;@----------------------------------------------------------------------------
-	ldmia spxptr,{r0,r1}		;@ Read scanLine & nextLineChange
+	ldmia svvptr,{r0,r1}		;@ Read scanLine & nextLineChange
 	add r0,r0,#1
 	cmp r0,r1
 	bpl redoScanline
-	str r0,[spxptr,#scanline]
+	str r0,[svvptr,#scanline]
 ;@----------------------------------------------------------------------------
 checkScanlineIRQ:
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{lr}
-	ldrb r1,[spxptr,#wsvLineCompare]
-	cmp r0,r1
-	ldrb r0,[spxptr,#wsvInterruptStatus]
-	orreq r0,r0,#0x10			;@ #4 = Line compare
+	ldrb r0,[svvptr,#wsvIRQStatus]
 
-	ldrb r2,[spxptr,#wsvTimerControl]
-	tst r2,#0x1					;@ HBlank timer enabled?
-	beq noTimerHBlIrq
-	ldrh r1,[spxptr,#wsvHBlCounter]
-	subs r1,r1,#1
-	bne noHBlIrq
-	orr r0,r0,#0x80				;@ #7 = HBlank timer
-	tst r2,#0x2					;@ Repeat?
-	biceq r2,r2,#0x1
-	strbeq r2,[spxptr,#wsvTimerControl]
-	ldrhne r1,[spxptr,#wsvHBlTimerFreq]
+	ldr r1,[svvptr,#wsvTimerValue]
+	ldrb r2,[svvptr,#wsvSystemControl]
+	tst r2,#0x10
+	subseq r1,r1,#64
+	subsne r1,r1,#1
+	str r1,[svvptr,#wsvTimerValue]
+	bpl noHBlIrq
+	orr r0,r0,#0x01				;@ #0 = Timer IRQ
 noHBlIrq:
-	strhpl r1,[spxptr,#wsvHBlCounter]
-noTimerHBlIrq:
 	bl svSetInterruptStatus
 
-	ldrb r0,[spxptr,#wsvSndDMACtrl]
-	tst r0,#0x80
-	blne doSoundDMA
-
-	ldr r0,[spxptr,#scanline]
+	ldr r0,[svvptr,#scanline]
 	subs r0,r0,#144				;@ Return from emulation loop on this scanline
 	movne r0,#1
 	ldmfd sp!,{pc}
 
 ;@----------------------------------------------------------------------------
-svSetInterruptExternal:	;@ r0 = irq state
-;@----------------------------------------------------------------------------
-	ldrb r1,[spxptr,#wsvInterruptStatus]
-	cmp r0,#0
-	biceq r0,r1,#4
-	orrne r0,r1,#4				;@ External interrupt is bit/number 2.
-;@----------------------------------------------------------------------------
 svSetInterruptStatus:		;@ r0 = interrupt status
 ;@----------------------------------------------------------------------------
-	ldrb r2,[spxptr,#wsvInterruptStatus]
+	ldrb r2,[svvptr,#wsvIRQStatus]
 	cmp r0,r2
 	bxeq lr
-	strb r0,[spxptr,#wsvInterruptStatus]
-	ldrb r1,[spxptr,#wsvInterruptEnable]
+	strb r0,[svvptr,#wsvIRQStatus]
+	ldrb r1,[svvptr,#wsvSystemControl]
 svUpdateIrqEnable:
-	and r0,r0,r1
-	ldr pc,[spxptr,#irqFunction]
-;@----------------------------------------------------------------------------
-doSoundDMA:					;@ In r0=SndDmaCtrl
-;@----------------------------------------------------------------------------
-	stmfd sp!,{r4,lr}
-	mov r4,r0
-	ldr r1,[spxptr,#wsvSndDMALen]
-	ldr r2,[spxptr,#wsvSndDMASrc]
-	subs r1,r1,#1
-	bpl sndDmaCont
-	tst r4,#0x08				;@ Loop?
-	biceq r4,r4,#0x80
-	strb r4,[spxptr,#wsvSndDMACtrl]
-	ldrne r1,[spxptr,#sndDmaLength]
-	ldrne r2,[spxptr,#sndDmaSource]
-	moveq r1,#0
-	streq r1,[spxptr,#wsvSndDMALen]
-	ldmfdeq sp!,{r4,pc}
-sndDmaCont:
-	str r1,[spxptr,#wsvSndDMALen]
-	mov r0,r2,lsl#12
-	tst r4,#0x40				;@ Increase/decrease
-	addeq r2,r2,#1
-	subne r2,r2,#1
-	str r2,[spxptr,#wsvSndDMASrc]
-//	bl cpuReadMem20
-	tst r4,#0x10				;@ Ch2Vol/HyperVoice
-	strbeq r0,[spxptr,#wsvSound2Vol]
-	sub cycles,cycles,#1*CYCLE
-	ldmfd sp!,{r4,pc}
-
-;@-------------------------------------------------------------------------------
-;@ bgChrFinish				;end of frame...
-;@-------------------------------------------------------------------------------
-;@	ldr r5,=0xFE00FE00
-;@	ldr r6,=0x00010001
-;@ MSB          LSB
-;@ hvbppppnnnnnnnnn
-bgMono:
-	and r1,r7,#0x0f
-	add r1,r10,r1,lsl#11
-	stmfd sp!,{lr}
-	bl bgm4Start
-	ldmfd sp!,{lr}
-
-	and r1,r7,#0xf0
-	add r1,r10,r1,lsl#7
-
-bgm4Start:
-	mov r2,#0x400
-bgm4Loop:
-	ldr r3,[r1],#4				;@ Read from Supervision Tilemap RAM
-
-	and r4,r5,r3				;@ Mask out palette, flip & bank
-	bic r4,r4,r6,lsl#13			;@ Clear out bank bit
-	bic r3,r3,r5
-	orr r4,r4,r4,lsr#7			;@ Switch palette vs flip + bank
-	and r4,r5,r4,lsl#3			;@ Mask again
-	orr r3,r3,r4				;@ Add palette, flip + bank.
-	and r4,r3,r6,lsl#14			;@ Mask out palette bit 2
-	orr r3,r3,r4,lsr#5			;@ Add as bank bit (GBA/NDS)
-
-	str r3,[r0],#4				;@ Write to GBA/NDS Tilemap RAM, background
-	subs r2,r2,#2
-	bne bgm4Loop
-
-	bx lr
+	and r0,r0,r1,lsr#1
+	ldr pc,[svvptr,#irqFunction]
 
 ;@----------------------------------------------------------------------------
 copyScrollValues:			;@ r0 = destination
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{r4-r6}
-	ldr r1,[spxptr,#scrollBuff]
+	ldr r1,[svvptr,#scrollBuff]
 
 	mov r2,#(SCREEN_HEIGHT-GAME_HEIGHT)/2
 	add r0,r0,r2,lsl#3			;@ 8 bytes per row
@@ -1627,7 +717,7 @@ svConvertScreen:	;@ In r0 = dest
 	stmfd sp!,{r3-r7}
 
 	ldr r4,=CHR_DECODE
-	ldr r2,=svVRAM
+	ldr r2,[svvptr,#gfxRAM]
 
 	mov r7,#20				;@ 20 tiles high screen
 scLoop:
