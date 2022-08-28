@@ -62,6 +62,7 @@ int initSettings() {
 		default:
 			break;
 	}
+	col = 2;
 	cfg.palette = col;
 	gPaletteBank = col;
 

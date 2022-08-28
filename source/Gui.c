@@ -4,6 +4,7 @@
 #include "Shared/EmuMenu.h"
 #include "Shared/EmuSettings.h"
 #include "Main.h"
+#include "SVController.h"
 #include "FileHandling.h"
 #include "Cart.h"
 #include "Gfx.h"
@@ -22,6 +23,8 @@ static void paletteChange(void);
 static void machineSet(void);
 static void speedHackSet(void);
 static void refreshChgSet(void);
+
+static void setupWSVBackground(void);
 
 static void uiMachine(void);
 static void uiDebug(void);
@@ -87,7 +90,9 @@ void quickSelectGame(void) {
 }
 
 void uiNullNormal() {
-	uiNullDefault();
+//	uiNullDefault();
+	setupWSVBackground();
+	drawItem("Menu",27,1,0);
 }
 
 void uiFile() {
@@ -234,6 +239,14 @@ void debugUndefinedInstruction() {
 void debugCrashInstruction() {
 	debugOutput("CPU Crash! (0xF1)");
 }
+
+//---------------------------------------------------------------------------------
+void setupWSVBackground(void) {
+	setupCompressedBackground(SVControllerTiles, SVControllerMap, 0);
+	memcpy(BG_PALETTE_SUB+0x80, SVControllerPal, SVControllerPalLen);
+}
+
+
 //---------------------------------------------------------------------------------
 /// Switch between Player 1 & Player 2 controls
 void controllerSet() {				// See io.s: refreshEMUjoypads

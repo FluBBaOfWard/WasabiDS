@@ -31,6 +31,8 @@
 		9C175BF628B64ABE00293DA7 /* SuperVisionTech.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = SuperVisionTech.txt; sourceTree = "<group>"; };
 		9C175BF728B65D3D00293DA7 /* Supervision_Tech.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = Supervision_Tech.txt; sourceTree = "<group>"; wrapsLines = 1; };
 		9C175BF928B65D7F00293DA7 /* EQU_WATARA.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = EQU_WATARA.txt; sourceTree = "<group>"; };
+		9C175BFA28BB7DF700293DA7 /* SVController.grit */ = {isa = PBXFileReference; lastKnownFileType = text; path = SVController.grit; sourceTree = "<group>"; };
+		9C175BFB28BB7DF700293DA7 /* SVController.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = SVController.png; sourceTree = "<group>"; };
 		9C1FFFA72684A277005851ED /* EmuSettings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EmuSettings.h; sourceTree = "<group>"; };
 		9C42404027E2264A0042454B /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		9C443D79278AE4110029EE11 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -80,6 +82,8 @@
 			children = (
 				9C175BDD28B6310B00293DA7 /* SVBorder.png */,
 				9C175BDE28B6310B00293DA7 /* SVBorder.grit */,
+				9C175BFB28BB7DF700293DA7 /* SVController.png */,
+				9C175BFA28BB7DF700293DA7 /* SVController.grit */,
 			);
 			path = graphics;
 			sourceTree = "<group>";

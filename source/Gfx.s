@@ -107,9 +107,8 @@ monoPalInit:
 	ldr r0,=gPaletteBank
 	ldrb r0,[r0]
 	adr r1,monoPalette
-	add r1,r1,r0,lsl#4
+	add r1,r1,r0,lsl#3
 	ldr r0,[svvptr,#paletteRAM]
-	add r0,r0,#0x180
 
 	mov r2,#8
 	ldmia r1,{r3-r6}
@@ -124,15 +123,15 @@ monoPalLoop:
 monoPalette:
 
 ;@ Black & White
-	.short 0xFFF,0xDDD,0xBBB,0x999,0x777,0x444,0x333,0x000
+	.short 0xCCC,0x999,0x666,0x333
 ;@ Red
-	.short 0xFFF,0xCCF,0x99F,0x55F,0x11D,0x009,0x006,0x000
+	.short 0xD99,0xA33,0x722,0x411
 ;@ Green
-	.short 0xFFF,0xBFB,0x7F7,0x3D3,0x0B0,0x080,0x050,0x000
+	.short 0x9D9,0x393,0x060,0x131
 ;@ Blue
-	.short 0xFFF,0xFCC,0xFAA,0xF88,0xE55,0xB22,0x700,0x000
+	.short 0xCCF,0x88F,0x55E,0x007
 ;@ Classic
-	.short 0xFFF,0xADE,0x8BD,0x59B,0x379,0x157,0x034,0x000
+	.short 0xEDA,0xB95,0x973,0x430
 ;@----------------------------------------------------------------------------
 paletteInit:		;@ r0-r3 modified.
 	.type paletteInit STT_FUNC
@@ -195,43 +194,14 @@ paletteTx:					;@ r0=destination, svvptr=KS5360
 	stmfd sp!,{r4-r8,lr}
 	mov r5,#0
 
-	ldr r4,=svRAM+0x1000
-	mov r3,r3,lsl#1
-	ldrh r3,[r4,r3]
-	and r3,r2,r3,lsl#1
-	ldrh r3,[r1,r3]
-	strh r3,[r0]				;@ Background palette
-	cmp r7,#0xC0				;@ 4bitplane mode?
-	bne col4Tx
-	add r6,r0,#0x100			;@ Sprite pal ofs - r5
-txLoop:
-	ldrh r3,[r4],#2
-	and r3,r2,r3,lsl#1
-	ldrh r3,[r1,r3]
-	cmp r5,#0x00
-	strhne r3,[r0,r5]			;@ Background palette
-	cmp r5,#0x100
-	strhpl r3,[r6,r5]			;@ Sprite palette
+	ldr r4,[svvptr,#paletteRAM]
 
-	add r5,r5,#2
-	cmp r5,#0x200
-	bmi txLoop
-
-	ldmfd sp!,{r4-r8,lr}
-	bx lr
-
-col4Tx:
 col4TxLoop:
 	ldrh r3,[r4,r5]
 	and r3,r2,r3,lsl#1
 	ldrh r3,[r1,r3]
-	cmp r5,#0x00
-	strhne r3,[r0]				;@ Background palette
+	strh r3,[r0]				;@ Background palette
 	strh r3,[r0,#0x8]			;@ Opaque tiles palette
-	cmp r5,#0x100
-	addpl r6,r0,#0x100
-	strhpl r3,[r6]				;@ Sprite palette
-	strhpl r3,[r6,#0x8]			;@ Sprite palette opaque
 
 	add r0,r0,#2
 	add r5,r5,#2
@@ -324,8 +294,8 @@ vblIrqHandler:
 	str r0,[r6,#REG_BG0CNT]
 	ldr r0,GFX_DISPCNT
 	ldrb r1,[svvptr,#wsvLatchedDispCtrl]
-	tst r1,#0x01
-	biceq r0,r0,#0x0100			;@ Turn off Bg
+//	tst r1,#0x01
+//	biceq r0,r0,#0x0100			;@ Turn off Bg
 	tst r1,#0x02
 	biceq r0,r0,#0x0200			;@ Turn off Fg
 	tst r1,#0x04

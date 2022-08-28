@@ -201,7 +201,7 @@ BankSwitch89AB_W:				;@ 0x8000-0xBFFF
 //	strb r1,[svvptr,#wsvBnk0SlctX]
 
 	ldr r0,romMask
-	ldr r2,romPtr
+	ldr r2,romSpacePtr
 	and r0,r0,r1
 	sub r2,r2,#0x8000
 
@@ -219,7 +219,7 @@ BankSwitchCDEF_W:				;@ 0xC000-0xFFFF
 //	strb r1,[svvptr,#wsvBnk1SlctX]
 
 	ldr r0,romMask
-	ldr r2,romPtr
+	ldr r2,romSpacePtr
 	and r0,r0,r1
 	sub r2,r2,#0xC000
 
@@ -261,8 +261,6 @@ gGameID:
 
 wsHeader:
 romSpacePtr:
-	.long 0
-romPtr:
 	.long 0
 g_BIOSBASE_BNW:
 	.long 0
