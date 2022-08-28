@@ -75,14 +75,14 @@ refreshEMUjoypads:			;@ Call every frame
 	ldrb r0,[r1,r0,lsr#4]
 
 	and r1,r4,#0x0C				;@ NDS Select/Start
-	orr r0,r0,r1				;@ SV Select/Start
+	orr r0,r0,r1,lsl#4			;@ SV Select/Start
 
 	ands r1,r3,#3				;@ A/B buttons
 	cmpne r1,#3
 	eorne r1,r1,#3
 	tst r2,#0x400				;@ Swap A/B?
 	andeq r1,r3,#3
-	orr r0,r0,r1,lsl#10
+	orr r0,r0,r1,lsl#4
 
 	strb r0,joy0State
 	bx lr

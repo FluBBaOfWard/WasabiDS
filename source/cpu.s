@@ -4,7 +4,7 @@
 #include "ARM6502/M6502mac.h"
 #include "KS5360/SVVideo.i"
 
-#define CYCLE_PSL (240)
+#define CYCLE_PSL (246*2)
 
 	.global run
 	.global cpuInit

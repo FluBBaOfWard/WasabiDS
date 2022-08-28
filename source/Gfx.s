@@ -14,7 +14,6 @@
 	.global wsvWriteIO
 	.global updateLCDRefresh
 	.global setScreenRefresh
-	.global getInterruptVector
 
 	.global gfxState
 	.global gGammaValue
@@ -24,7 +23,6 @@
 	.global vblIrqHandler
 	.global GFX_DISPCNT
 	.global GFX_BG0CNT
-	.global GFX_BG1CNT
 	.global EMUPALBUFF
 	.global tmpOamBuffer
 
@@ -361,7 +359,7 @@ refreshGfx:					;@ Called from C when changing scaling.
 ;@----------------------------------------------------------------------------
 endFrameGfx:				;@ Called just before screen end (~line 143)	(r0-r3 safe to use)
 ;@----------------------------------------------------------------------------
-	stmfd sp!,{lr}
+	stmfd sp!,{r3,lr}
 
 	ldr r0,tmpScroll			;@ Destination
 	bl copyScrollValues
@@ -381,7 +379,7 @@ endFrameGfx:				;@ Called just before screen end (~line 143)	(r0-r3 safe to use)
 	mov r0,#1
 	strb r0,frameDone
 
-	ldmfd sp!,{lr}
+	ldmfd sp!,{r3,lr}
 	bx lr
 
 ;@----------------------------------------------------------------------------
@@ -407,17 +405,24 @@ svVideoReset0:		;@ r0=periodicIrqFunc, r1=, r2=frame2IrqFunc, r3=model
 wsvReadIO:
 	.type wsvReadIO STT_FUNC
 ;@----------------------------------------------------------------------------
+	stmfd sp!,{r3,r12,lr}
 	mov r0,r12
 	adr svvptr,ks5360_0
-	b svRead
+	bl svRead
+	ldmfd sp!,{r3,r12,lr}
+	bx lr
 ;@----------------------------------------------------------------------------
 wsvWriteIO:
 	.type wsvWriteIO STT_FUNC
 ;@----------------------------------------------------------------------------
+	stmfd sp!,{r3,r12,lr}
 	mov r1,r0
 	mov r0,r12
 	adr svvptr,ks5360_0
-	b svWrite
+	bl svWrite
+	ldmfd sp!,{r3,r12,lr}
+	bx lr
+;@----------------------------------------------------------------------------
 ks5360_0:
 	.space ks5360Size
 ;@----------------------------------------------------------------------------
@@ -433,7 +438,6 @@ GFX_DISPCNT:
 	.long 0
 GFX_BG0CNT:
 	.short 0
-GFX_BG1CNT:
 	.short 0
 
 #ifdef GBA

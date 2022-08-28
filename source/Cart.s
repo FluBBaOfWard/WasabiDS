@@ -99,8 +99,6 @@ loadCart: 		;@ Called from C:
 
 	bl resetCartridgeBanks
 
-	ldr r6,[m6502optbl,#m6502MemTbl+7*4]		;@ MemMap
-
 	ldrb r5,gMachine
 	cmp r5,#HW_SUPERVISION
 	moveq r0,#1				;@ Set boot rom overlay (size small)

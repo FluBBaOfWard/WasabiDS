@@ -171,7 +171,6 @@ static void setupGraphics() {
 	// Set up the main display
 	GFX_DISPCNT = MODE_0_2D
 				 | DISPLAY_BG0_ACTIVE
-				 | DISPLAY_BG1_ACTIVE
 				 | DISPLAY_BG2_ACTIVE
 				 | DISPLAY_SPR_ACTIVE
 				 | DISPLAY_WIN0_ON
@@ -180,9 +179,7 @@ static void setupGraphics() {
 				 ;
 	videoSetMode(GFX_DISPCNT);
 	GFX_BG0CNT = BG_32x32 | BG_MAP_BASE(0) | BG_COLOR_16 | BG_TILE_BASE(2) | BG_PRIORITY(1);
-	GFX_BG1CNT = BG_32x32 | BG_MAP_BASE(1) | BG_COLOR_16 | BG_TILE_BASE(2) | BG_PRIORITY(0);
 	REG_BG0CNT = GFX_BG0CNT;
-	REG_BG1CNT = GFX_BG1CNT;
 	REG_BG2CNT = BG_32x32 | BG_MAP_BASE(2) | BG_COLOR_256 | BG_TILE_BASE(1) | BG_PRIORITY(2);
 
 	// Set up the sub display
