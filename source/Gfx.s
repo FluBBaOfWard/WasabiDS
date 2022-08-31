@@ -226,7 +226,7 @@ setScreenRefresh:			;@ r0 in = WS scan line count.
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{r4-r6,lr}
 	mov r4,r0
-	ldr r6,=12000				;@ WS scanline frequency = 12kHz
+	ldr r6,=8130				;@ SV scanline frequency = 8130Hz
 	mov r0,r6,lsl#1
 	mov r1,r4
 	swi 0x090000				;@ Division r0/r1, r0=result, r1=remainder.
@@ -267,10 +267,10 @@ vblIrqHandler:
 
 	add r1,r6,#REG_DMA0SAD
 	ldr r2,dmaScroll			;@ Setup DMA buffer for scrolling:
-	ldmia r2!,{r4-r5}			;@ Read
+	ldmia r2!,{r4}				;@ Read
 	add r3,r6,#REG_BG0HOFS		;@ DMA0 always goes here
-	stmia r3,{r4-r5}			;@ Set 1st value manually, HBL is AFTER 1st line
-	ldr r4,=0x96600002			;@ noIRQ hblank 32bit repeat incsrc inc_reloaddst, 2 word
+	stmia r3,{r4}				;@ Set 1st value manually, HBL is AFTER 1st line
+	ldr r4,=0x96600001			;@ noIRQ hblank 32bit repeat incsrc inc_reloaddst, 1 word
 	stmia r1,{r2-r4}			;@ DMA0 go
 
 	add r1,r6,#REG_DMA3SAD
@@ -397,7 +397,7 @@ gGfxMask:		.byte 0
 frameDone:		.byte 0
 				.byte 0,0
 ;@----------------------------------------------------------------------------
-svVideoReset0:		;@ r0=periodicIrqFunc, r1=, r2=frame2IrqFunc, r3=model
+svVideoReset0:		;@ r0=NmiFunc, r1=IrqFunc, r2=ram+LUTs, r3=model
 ;@----------------------------------------------------------------------------
 	adr svvptr,ks5360_0
 	b svVideoReset

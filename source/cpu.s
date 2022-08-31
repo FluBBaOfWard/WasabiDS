@@ -45,8 +45,6 @@ runStart:
 //	ldrbne r2,[r2]
 //	tstne r2,#4					;@ Power button NMI enabled?
 //	and r0,r3,#0x04				;@ NDS Select?
-//	ldr v30ptr,=V30OpTable
-//	bl V30SetNMIPin
 
 	bl refreshEMUjoypads
 skipInput:

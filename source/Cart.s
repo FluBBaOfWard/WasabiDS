@@ -14,7 +14,6 @@
 	.global BankSwitchCDEF_W
 	.global clearDirtyTiles
 
-	.global wsHeader
 	.global romSpacePtr
 	.global MEMMAPTBL_
 
@@ -54,7 +53,6 @@ WS_BIOS_INTERNAL:
 //	.incbin "wsroms/boot.rom"
 //	.incbin "wsroms/ws_irom.bin"
 WSC_BIOS_INTERNAL:
-SC_BIOS_INTERNAL:
 //	.incbin "wsroms/boot1.rom"
 //	.incbin "wsroms/wc_irom.bin"
 //	.incbin "wsroms/wsc_irom.bin"
@@ -257,7 +255,6 @@ gGameID:
 	.byte 0
 	.space 2					;@ alignment.
 
-wsHeader:
 romSpacePtr:
 	.long 0
 g_BIOSBASE_BNW:
