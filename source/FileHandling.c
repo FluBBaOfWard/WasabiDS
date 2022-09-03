@@ -33,10 +33,6 @@ int initSettings() {
 	cfg.emuSettings = AUTOPAUSE_EMULATION | AUTOLOAD_NVRAM;
 	cfg.sleepTime = 60*60*5;
 	cfg.controller = 0;					// Don't swap A/B
-	cfg.birthYear[0] = 0x19;
-	cfg.birthYear[1] = 0x99;
-	cfg.birthMonth = bin2BCD(PersonalData->birthMonth);
-	cfg.birthDay = bin2BCD(PersonalData->birthDay);
 	cfg.language = (PersonalData->language == 0) ? 0 : 1;
 	int col = 0;
 	switch (PersonalData->theme & 0xF) {
@@ -47,12 +43,12 @@ int initSettings() {
 		case 2:
 		case 3:
 		case 15:
-			col = 1;	// Red
+			col = 2;	// Red
 			break;
 		case 6:
 		case 7:
 		case 8:
-			col = 2;	// Green
+			col = 0;	// Green
 			break;
 		case 10:
 		case 11:
@@ -62,21 +58,10 @@ int initSettings() {
 		default:
 			break;
 	}
-	col = 2;
+	col = 0;
 	cfg.palette = col;
 	gPaletteBank = col;
 
-	int i;
-	for (i = 0; i < PersonalData->nameLen; i++) {
-		s16 char16 = PersonalData->name[i];
-		if (char16 < 0xFF) {
-			cfg.name[i] = char16;
-		}
-		else {
-			break;
-		}
-	}
-	cfg.name[i] = 0;
 	return 0;
 }
 
@@ -84,24 +69,6 @@ bool updateSettingsFromSV() {
 	int val = 0;
 	bool changed = false;
 
-	//val = t9LoadB(0x6F8B);
-	if (cfg.birthYear[0] != (val & 0xFF) || cfg.birthYear[1] != ((val >> 8) & 0xFF)) {
-		cfg.birthYear[0] = val;
-		cfg.birthYear[1] = (val >> 8);
-		changed = true;
-	}
-	//val = t9LoadB(0x6F8C);
-	if (cfg.birthMonth != val) {
-		cfg.birthMonth = val;
-		changed = true;
-	}
-	//val = t9LoadB(0x6F8D);
-	if (cfg.birthDay != val) {
-		cfg.birthDay = val;
-		changed = true;
-	}
-
-	//val = t9LoadB(0x6F87) & 1;
 	if (cfg.language != val) {
 		cfg.language = val;
 		gLang = val;
@@ -133,6 +100,7 @@ int loadSettings() {
 	}
 
 	gGammaValue = cfg.gammaValue;
+	gContrastValue = cfg.contrastValue;
 	emuSettings  = cfg.emuSettings & ~EMUSPEED_MASK;	// Clear speed setting.
 	sleepTime    = cfg.sleepTime;
 	joyCfg       = (joyCfg & ~0x400)|((cfg.controller & 1)<<10);
@@ -147,6 +115,7 @@ void saveSettings() {
 
 	strcpy(cfg.magic,"cfg");
 	cfg.gammaValue  = gGammaValue;
+	cfg.contrastValue  = gContrastValue;
 	cfg.emuSettings = emuSettings & ~EMUSPEED_MASK;		// Clear speed setting.
 	cfg.sleepTime   = sleepTime;
 	cfg.controller  = (joyCfg>>10)&1;

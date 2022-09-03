@@ -7,7 +7,6 @@
 	.global gfxReset
 	.global monoPalInit
 	.global paletteInit
-	.global paletteTxAll
 	.global refreshGfx
 	.global endFrameGfx
 	.global wsvReadIO
@@ -72,7 +71,6 @@ gfxReset:					;@ Called with CPU reset
 	ldr r0,=gGammaValue
 	ldrb r0,[r0]
 	bl paletteInit				;@ Do palette mapping
-	bl paletteTxAll				;@ Transfer it
 
 	ldr svvptr,=ks5360_0
 
@@ -100,73 +98,96 @@ gfxWinInit:
 monoPalInit:
 	.type monoPalInit STT_FUNC
 ;@----------------------------------------------------------------------------
-	ldr svvptr,=ks5360_0
-	stmfd sp!,{r4-r6,lr}
+	stmfd sp!,{r4,lr}
 	ldr r0,=gPaletteBank
 	ldrb r0,[r0]
 	adr r1,monoPalette
 	add r1,r1,r0,lsl#3
-	ldr r0,[svvptr,#paletteRAM]
+	ldr r0,=MAPPED_RGB
 
-	mov r2,#8
-	ldmia r1,{r3-r6}
-monoPalLoop:
-	stmia r0!,{r3-r6}
-	subs r2,r2,#1
-	bne monoPalLoop
+	ldmia r1,{r2-r3}
+	stmia r0!,{r2-r3}
 
-	ldmfd sp!,{r4-r6,lr}
+	ldmfd sp!,{r4,lr}
 	bx lr
 ;@----------------------------------------------------------------------------
 monoPalette:
 
-;@ Black & White
-	.short 0xCCC,0x999,0x666,0x333
-;@ Red
-	.short 0xD99,0xA33,0x722,0x411
 ;@ Green
-	.short 0x9D9,0x393,0x060,0x131
+	.long 0x7FFF7F, 0x102010
+//	.byte 0x66,0xDD,0x66, 0x4C,0x99,0x4C, 0x33,0x66,0x33, 0x19,0x33,0x19
+//	.short 0x9D9,0x393,0x161,0x030
+;@ Black & White
+	.long 0xFFFFFF, 0x000000
+//	.byte 0xCC,0xCC,0xCC, 0x99,0x99,0x99, 0x66,0x66,0x66, 0x33,0x33,0x33
+//	.short 0xCCC,0x999,0x666,0x333
+;@ Red
+	.long 0xEE7777, 0x221111
+//	.byte 0xDD,0x99,0x99, 0xAA,0x33,0x33, 0x77,0x22,0x22, 0x44,0x11,0x11
+//	.short 0xD99,0xA33,0x722,0x411
 ;@ Blue
-	.short 0xCCF,0x88F,0x55E,0x007
+	.long 0xCCCCFF, 0x000077
+//	.byte 0xCC,0xCC,0xFF, 0x88,0x88,0xFF, 0x55,0x55,0xEE, 0x00,0x00,0x77
+//	.short 0xCCF,0x88F,0x55E,0x007
 ;@ Classic
-	.short 0xEDA,0xB95,0x973,0x430
+	.long 0xFFDDAA, 0x221100
+//	.byte 0xEE,0xDD,0xAA, 0xBB,0x99,0x55, 0x99,0x77,0x33, 0x44,0x33,0x00
+//	.short 0xEDA,0xB95,0x973,0x430
 ;@----------------------------------------------------------------------------
 paletteInit:		;@ r0-r3 modified.
 	.type paletteInit STT_FUNC
 ;@ Called by ui.c:  void paletteInit(gammaVal);
 ;@----------------------------------------------------------------------------
-	stmfd sp!,{r4-r7,lr}
-	mov r1,r0					;@ Gamma value = 0 -> 4
-	mov r7,#0xF					;@ mask
-	ldr r6,=MAPPED_RGB
-	mov r4,#4096*2
-	sub r4,r4,#2
-noMap:							;@ Map 0000rrrrggggbbbb  ->  0bbbbbgggggrrrrr
-	and r0,r7,r4,lsr#1			;@ Blue ready
-	bl gPrefix
-	mov r5,r0,lsl#10
+	stmfd sp!,{r4-r9,lr}
+	mov r8,r0					;@ Gamma value = 0 -> 4
+	ldr r9,=gContrastValue
+	ldrb r9,[r9]
+	ldr r6,=EMUPALBUFF
+	ldr r7,=MAPPED_RGB
+	mov r4,#4
+noMap:							;@ Map rrrrrrrr_gggggggg_bbbbbbbb  ->  0bbbbbgggggrrrrr
+	ldrb r0,[r7,#2]				;@ Red high
+	ldrb r1,[r7,#6]				;@ Red low
+	mov r2,r9
+	bl contrastConvert
+	sub r2,r4,#1
+	bl liConvR2
+	mov r1,r8
+	bl gammaConvert
+	mov r5,r0,lsr#3
 
-	and r0,r7,r4,lsr#5			;@ Green ready
-	bl gPrefix
+	ldrb r0,[r7,#1]				;@ Green high
+	ldrb r1,[r7,#5]				;@ Green low
+	mov r2,r9
+	bl contrastConvert
+	sub r2,r4,#1
+	bl liConvR2
+	mov r1,r8
+	bl gammaConvert
+	mov r0,r0,lsr#3
 	orr r5,r5,r0,lsl#5
-	orrcs r5,r5,#0x8000
 
-	and r0,r7,r4,lsr#9			;@ Red ready
-	bl gPrefix
-	orr r5,r5,r0
+	ldrb r0,[r7,#0]				;@ Blue high
+	ldrb r1,[r7,#4]				;@ Blue low
+	mov r2,r9
+	bl contrastConvert
+	sub r2,r4,#1
+	bl liConvR2
+	mov r1,r8
+	bl gammaConvert
+	mov r0,r0,lsr#3
+	orr r5,r5,r0,lsl#10
 
-	strh r5,[r6,r4]
-	subs r4,r4,#2
-	bpl noMap
+	strh r5,[r6],#2
+	subs r4,r4,#1
+	bne noMap
 
-	ldmfd sp!,{r4-r7,lr}
+	ldmfd sp!,{r4-r9,lr}
 	bx lr
 
 ;@----------------------------------------------------------------------------
-gPrefix:
-	orr r0,r0,r0,lsl#4
-;@----------------------------------------------------------------------------
-gammaConvert:	;@ Takes value in r0(0-0xFF), gamma in r1(0-4),returns new value in r0=0x1F
+gammaConvert:	;@ Takes value in r0(0-0xFF), gamma in r1(0-4)
+				;@ returns new value in r0=0xFF
 ;@----------------------------------------------------------------------------
 	rsb r2,r0,#0x100
 	mul r3,r2,r2
@@ -175,42 +196,36 @@ gammaConvert:	;@ Takes value in r0(0-0xFF), gamma in r1(0-4),returns new value i
 	orr r0,r0,r0,lsl#8
 	mul r2,r1,r2
 	mla r0,r3,r0,r2
-	movs r0,r0,lsr#13
-
+	mov r0,r0,lsr#10
 	bx lr
 ;@----------------------------------------------------------------------------
-paletteTxAll:				;@ Called from ui.c
-	.type paletteTxAll STT_FUNC
+contrastConvert:	;@ Takes values in r0 & r1(0-0xFF), contrast in r2(0-4)
+					;@ returns new values in r0&r1=0xFF
 ;@----------------------------------------------------------------------------
-	ldr r0,=EMUPALBUFF
-	ldr svvptr,=ks5360_0
+	movs r2,r2,lsl#8
+	addeq r2,r2,#0x80
+	add r3,r0,r1
+	sub r0,r0,r3,lsr#1
+	sub r1,r1,r3,lsr#1
+	mul r0,r2,r0
+	mul r1,r2,r1
+	mov r0,r0,asr#8+2
+	mov r1,r1,asr#8+2
+	add r0,r0,r3,lsr#1
+	add r1,r1,r3,lsr#1
+	bx lr
+
 ;@----------------------------------------------------------------------------
-paletteTx:					;@ r0=destination, svvptr=KS5360
+liConvR2:
+	orr r2,r2,r2,lsl#2
+	orr r2,r2,r2,lsl#4
 ;@----------------------------------------------------------------------------
-	ldr r1,=MAPPED_RGB
-	ldr r2,=0x1FFE
-	stmfd sp!,{r4-r8,lr}
-	mov r5,#0
-
-	ldr r4,[svvptr,#paletteRAM]
-
-col4TxLoop:
-	ldrh r3,[r4,r5]
-	and r3,r2,r3,lsl#1
-	ldrh r3,[r1,r3]
-	strh r3,[r0]				;@ Background palette
-	strh r3,[r0,#0x8]			;@ Opaque tiles palette
-
-	add r0,r0,#2
-	add r5,r5,#2
-	tst r5,#6
-	bne col4TxLoop
-	add r0,r0,#0x18
-	add r5,r5,#0x18
-	cmp r5,#0x200
-	bmi col4TxLoop
-
-	ldmfd sp!,{r4-r8,lr}
+lightConvert:	;@ Takes values in r0 & r1(0-0xFF), light in r2(0-0xFF)
+				;@ returns new values in r0=0xFF
+;@----------------------------------------------------------------------------
+	sub r3,r0,r1
+	mul r3,r2,r3
+	add r0,r1,r3,lsr#8
 	bx lr
 
 ;@----------------------------------------------------------------------------
@@ -363,7 +378,6 @@ endFrameGfx:				;@ Called just before screen end (~line 143)	(r0-r3 safe to use)
 
 	ldr r0,tmpScroll			;@ Destination
 	bl copyScrollValues
-	bl paletteTxAll
 ;@--------------------------
 
 	ldr r0,tmpOamBuffer

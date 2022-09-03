@@ -13,7 +13,7 @@
 #include "ARM6502/Version.h"
 #include "KS5360/Version.h"
 
-#define EMUVERSION "V0.1.1 2022-08-28"
+#define EMUVERSION "V0.1.1 2022-09-03"
 
 #define ALLOW_SPEED_HACKS	(1<<17)
 #define ENABLE_HEADPHONES	(1<<18)
@@ -37,7 +37,7 @@ const fptr fnList1[] = {selectGame, loadState, saveState, loadNVRAM, saveNVRAM, 
 const fptr fnList2[] = {ui4, ui5, ui6, ui7, ui8};
 const fptr fnList3[] = {uiDummy};
 const fptr fnList4[] = {autoBSet, autoASet, controllerSet, swapABSet};
-const fptr fnList5[] = {gammaSet, paletteChange};
+const fptr fnList5[] = {gammaSet, contrastSet, paletteChange};
 const fptr fnList6[] = {machineSet, selectBnWBios, selectColorBios, speedHackSet /*languageSet*/};
 const fptr fnList7[] = {speedSet, refreshChgSet, autoStateSet, autoNVRAMSet, autoSettingsSet, autoPauseGameSet, powerSaveSet, screenSwapSet, sleepSet};
 const fptr fnList8[] = {debugTextSet, fgrLayerSet, bgrLayerSet, sprLayerSet};
@@ -49,6 +49,7 @@ const fptr drawUIX[] = {uiNullNormal, uiFile, uiOptions, uiAbout, uiController, 
 const u8 menuXBack[] = {0,0,0,0,2,2,2,2,2,1,1};
 
 u8 gGammaValue = 0;
+u8 gContrastValue = 1;
 char gameInfoString[32];
 
 const char *const autoTxt[]  = {"Off", "On", "With R"};
@@ -59,7 +60,7 @@ const char *const ctrlTxt[]  = {"1P", "2P"};
 const char *const dispTxt[]  = {"Unscaled", "Scaled"};
 const char *const flickTxt[] = {"No Flicker", "Flicker"};
 const char *const bordTxt[]  = {"Black", "Border Color", "None"};
-const char *const palTxt[]   = {"Black & White", "Red", "Green", "Blue", "Classic"};
+const char *const palTxt[]   = {"Green", "Black & White", "Red", "Blue", "Classic"};
 const char *const langTxt[]  = {"Japanese", "English"};
 const char *const machTxt[]  = {"Auto", "SuperVision", "SuperVision Color"};
 
@@ -146,6 +147,7 @@ void uiController() {
 void uiDisplay() {
 	setupSubMenu("Display Settings");
 	drawSubItem("Gamma: ", brighTxt[gGammaValue]);
+	drawSubItem("Contrast: ", brighTxt[gContrastValue]);
 	drawSubItem("B&W Palette: ", palTxt[gPaletteBank]);
 }
 
@@ -263,8 +265,15 @@ void gammaSet() {
 	gGammaValue++;
 	if (gGammaValue > 4) gGammaValue = 0;
 	paletteInit(gGammaValue);
-	paletteTxAll();					// Make new palette visible
 	setupMenuPalette();
+	settingsChanged = true;
+}
+
+/// Change contrast
+void contrastSet() {
+	gContrastValue++;
+	if (gContrastValue > 4) gContrastValue = 0;
+	paletteInit(gGammaValue);
 	settingsChanged = true;
 }
 
@@ -287,7 +296,7 @@ void paletteChange() {
 		gPaletteBank = 0;
 	}
 	monoPalInit();
-	paletteTxAll();
+	paletteInit(gGammaValue);
 	settingsChanged = true;
 }
 /*

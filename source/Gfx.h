@@ -21,7 +21,6 @@ void gfxInit(void);
 void vblIrqHandler(void);
 void monoPalInit(void);
 void paletteInit(u8 gammaVal);
-void paletteTxAll(void);
 void updateLCDRefresh(void);
 void refreshGfx(void);
 u8 wsvReadIO(u16 adr);
