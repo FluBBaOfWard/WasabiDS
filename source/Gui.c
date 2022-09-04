@@ -13,7 +13,7 @@
 #include "ARM6502/Version.h"
 #include "KS5360/Version.h"
 
-#define EMUVERSION "V0.1.1 2022-09-03"
+#define EMUVERSION "V0.1.1 2022-09-04"
 
 #define ALLOW_SPEED_HACKS	(1<<17)
 #define ENABLE_HEADPHONES	(1<<18)
@@ -62,7 +62,7 @@ const char *const flickTxt[] = {"No Flicker", "Flicker"};
 const char *const bordTxt[]  = {"Black", "Border Color", "None"};
 const char *const palTxt[]   = {"Green", "Black & White", "Red", "Blue", "Classic"};
 const char *const langTxt[]  = {"Japanese", "English"};
-const char *const machTxt[]  = {"Auto", "SuperVision", "SuperVision Color"};
+const char *const machTxt[]  = {"Auto", "SuperVision", "SuperVision TV-Link"};
 
 
 void setupGUI() {

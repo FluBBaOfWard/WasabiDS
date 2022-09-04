@@ -22,6 +22,7 @@
 	.global vblIrqHandler
 	.global GFX_DISPCNT
 	.global GFX_BG0CNT
+	.global GFX_BG1CNT
 	.global EMUPALBUFF
 	.global tmpOamBuffer
 
@@ -115,24 +116,14 @@ monoPalette:
 
 ;@ Green
 	.long 0x7FFF7F, 0x102010
-//	.byte 0x66,0xDD,0x66, 0x4C,0x99,0x4C, 0x33,0x66,0x33, 0x19,0x33,0x19
-//	.short 0x9D9,0x393,0x161,0x030
 ;@ Black & White
 	.long 0xFFFFFF, 0x000000
-//	.byte 0xCC,0xCC,0xCC, 0x99,0x99,0x99, 0x66,0x66,0x66, 0x33,0x33,0x33
-//	.short 0xCCC,0x999,0x666,0x333
 ;@ Red
-	.long 0xEE7777, 0x221111
-//	.byte 0xDD,0x99,0x99, 0xAA,0x33,0x33, 0x77,0x22,0x22, 0x44,0x11,0x11
-//	.short 0xD99,0xA33,0x722,0x411
+	.long 0xFF7F7F, 0x201010
 ;@ Blue
-	.long 0xCCCCFF, 0x000077
-//	.byte 0xCC,0xCC,0xFF, 0x88,0x88,0xFF, 0x55,0x55,0xEE, 0x00,0x00,0x77
-//	.short 0xCCF,0x88F,0x55E,0x007
+	.long 0x8080FF, 0x000020
 ;@ Classic
 	.long 0xFFDDAA, 0x221100
-//	.byte 0xEE,0xDD,0xAA, 0xBB,0x99,0x55, 0x99,0x77,0x33, 0x44,0x33,0x00
-//	.short 0xEDA,0xB95,0x973,0x430
 ;@----------------------------------------------------------------------------
 paletteInit:		;@ r0-r3 modified.
 	.type paletteInit STT_FUNC
@@ -309,12 +300,9 @@ vblIrqHandler:
 	ldrb r1,[svvptr,#wsvLatchedDispCtrl]
 //	tst r1,#0x01
 //	biceq r0,r0,#0x0100			;@ Turn off Bg
-	tst r1,#0x02
-	biceq r0,r0,#0x0200			;@ Turn off Fg
-	tst r1,#0x04
-	biceq r0,r0,#0x1000			;@ Turn off Sprites
-	tst r1,#0x20				;@ Win for Fg on?
-	biceq r0,r0,#0x2000			;@ Turn off Fg-Window
+//	biceq r0,r0,#0x0200			;@ Turn off Fg
+//	tst r1,#0x20				;@ Win for Fg on?
+//	biceq r0,r0,#0x2000			;@ Turn off Fg-Window
 	ldrb r2,gGfxMask
 	bic r0,r0,r2,lsl#8
 	strh r0,[r6,#REG_DISPCNT]
@@ -372,7 +360,7 @@ refreshGfx:					;@ Called from C when changing scaling.
 ;@----------------------------------------------------------------------------
 	adr svvptr,ks5360_0
 ;@----------------------------------------------------------------------------
-endFrameGfx:				;@ Called just before screen end (~line 143)	(r0-r3 safe to use)
+endFrameGfx:				;@ Called just before screen end (~line 159)	(r0-r3 safe to use)
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{r3,lr}
 
@@ -452,6 +440,7 @@ GFX_DISPCNT:
 	.long 0
 GFX_BG0CNT:
 	.short 0
+GFX_BG1CNT:
 	.short 0
 
 #ifdef GBA

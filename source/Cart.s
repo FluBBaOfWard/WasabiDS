@@ -46,8 +46,11 @@
 
 ROM_Space:
 	.incbin "roms/Alien.sv"
+//	.incbin "roms/Bubble World (1992) (Bon Treasure).sv"
+//	.incbin "roms/Cave Wonder (1992) (Bon Treasure).sv"
 //	.incbin "roms/Happy Pairs (1992) (Sachen).sv"
 //	.incbin "roms/Jaguar Bomber (1992) (Bon Treasure).sv"
+//	.incbin "roms/Kitchen War (1992) (Bon Treasure).sv"
 ROM_SpaceEnd:
 WS_BIOS_INTERNAL:
 //	.incbin "wsroms/boot.rom"

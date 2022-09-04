@@ -689,13 +689,14 @@ The NMI occurs every 65536 clock cycles (61.04Hz) regardless of the rate that th
 System Control:
 7       0
 ---------
-BBBS D?IN
+BBBS DATN
 
    B: Bank select bits for 8000-BFFF.
+   S: IRQ Timer prescaler. 1 = divide by 16384, 0 = divide by 256
+   D: Display enable. 1 = enable display, 0 = disable display
+   A: Enable the Sound IRQ (1 = enable)
+   T: Enable the Timer IRQ (1 = enable)
    N: Enable the NMI (1 = enable)
-   I: Enable the IRQ (1 = enable)
-   S: IRQ Timer prescaler.  1 = divide by 16384, 0 = divide by 256
-   D: Display enable. 1 = enable display, 0 = disable display  
 
 Writing to this register resets the LCD rendering system and makes it start rendering from the upper left corner, regardless of the bit pattern.
 
