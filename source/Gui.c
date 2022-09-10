@@ -13,7 +13,7 @@
 #include "ARM6502/Version.h"
 #include "KS5360/Version.h"
 
-#define EMUVERSION "V0.1.1 2022-09-04"
+#define EMUVERSION "V0.2.0 2022-09-10"
 
 #define ALLOW_SPEED_HACKS	(1<<17)
 #define ENABLE_HEADPHONES	(1<<18)

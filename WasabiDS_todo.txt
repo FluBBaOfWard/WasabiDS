@@ -1,7 +1,6 @@
 WasabiDS Todo
 
-	Fix better sound!
-	Find speed hacks.
+	Fix sound!
 
 GFX:
 	See SVVideo todo.
