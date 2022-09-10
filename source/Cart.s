@@ -8,6 +8,7 @@
 	.global romNum
 	.global cartFlags
 	.global romStart
+	.global bankSwitchCart
 	.global reBankSwitch89AB
 	.global reBankSwitchCDEF
 	.global BankSwitch89AB_W
@@ -45,12 +46,16 @@
 	.align 2
 
 ROM_Space:
-	.incbin "roms/Alien.sv"
+//	.incbin "roms/Alien.sv"
 //	.incbin "roms/Bubble World (1992) (Bon Treasure).sv"
 //	.incbin "roms/Cave Wonder (1992) (Bon Treasure).sv"
+//	.incbin "roms/Climber (1992) (Bon Treasure).sv"
 //	.incbin "roms/Happy Pairs (1992) (Sachen).sv"
 //	.incbin "roms/Jaguar Bomber (1992) (Bon Treasure).sv"
+//	.incbin "roms/Journey to the West (US).sv"
+//	.incbin "roms/Juggler (1992) (Bon Treasure).sv"
 //	.incbin "roms/Kitchen War (1992) (Bon Treasure).sv"
+//	.incbin "roms/WaTest.sv"
 ROM_SpaceEnd:
 WS_BIOS_INTERNAL:
 //	.incbin "wsroms/boot.rom"
@@ -67,12 +72,12 @@ machineInit: 	;@ Called from C
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{r4-r11,lr}
 
-	ldr r0,=romSize
-	mov r1,#ROM_SpaceEnd-ROM_Space
-	str r1,[r0]
-	ldr r0,=romSpacePtr
-	ldr r7,=ROM_Space
-	str r7,[r0]
+//	ldr r0,=romSize
+//	mov r1,#ROM_SpaceEnd-ROM_Space
+//	str r1,[r0]
+//	ldr r0,=romSpacePtr
+//	ldr r7,=ROM_Space
+//	str r7,[r0]
 
 	bl memoryMapInit
 	bl gfxInit
@@ -194,6 +199,17 @@ resetCartridgeBanks:
 reBankSwitch89AB:				;@ 0x8000-0xBFFF
 ;@----------------------------------------------------------------------------
 //	ldrb r1,[svvptr,#wsvBnk0SlctX]
+;@----------------------------------------------------------------------------
+bankSwitchCart:					;@ r0 = LinkPort val, r1 = BankChip val
+;@----------------------------------------------------------------------------
+	mov r1,r1,lsr#5
+	ldrb r2,romMask
+	cmp r2,#8
+	bmi BankSwitch89AB_W
+	tst r1,#4
+	orrne r0,r0,#0xF
+	and r1,r1,#1
+	orr r1,r1,r0,lsl#1
 ;@----------------------------------------------------------------------------
 BankSwitch89AB_W:				;@ 0x8000-0xBFFF
 ;@----------------------------------------------------------------------------

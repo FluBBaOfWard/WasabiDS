@@ -81,7 +81,7 @@ refreshEMUjoypads:			;@ Call every frame
 	cmpne r1,#3
 	eorne r1,r1,#3
 	tst r2,#0x400				;@ Swap A/B?
-	andeq r1,r3,#3
+	andne r1,r3,#3
 	orr r0,r0,r1,lsl#4
 
 	strb r0,joy0State

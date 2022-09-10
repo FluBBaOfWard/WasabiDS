@@ -135,7 +135,6 @@ void saveSettings() {
 	}
 }
 
-//void loadSaveGameFile()
 void loadNVRAM() {
 	FILE *wssFile;
 	char nvramName[FILENAMEMAXLENGTH];
@@ -163,13 +162,11 @@ void loadNVRAM() {
 		infoOutput("Loaded NVRAM.");
 	}
 	else {
-//		memset(nvMem, 0, saveSize);
 		infoOutput("Couldn't open NVRAM file:");
 		infoOutput(nvramName);
 	}
 }
 
-//void writeSaveGameFile() {
 void saveNVRAM() {
 	FILE *wssFile;
 	char nvramName[FILENAMEMAXLENGTH];
@@ -360,14 +357,14 @@ static bool selectBios(char *dest, const char *fileTypes) {
 }
 
 void selectBnWBios() {
-	if ( selectBios(cfg.monoBiosPath, ".ws.rom.zip") ) {
+	if ( selectBios(cfg.monoBiosPath, ".sv.bin.zip") ) {
 		loadBnWBIOS();
 	}
 	cls(0);
 }
 
 void selectColorBios() {
-	if ( selectBios(cfg.colorBiosPath, ".ws.wsc.rom.zip") ) {
+	if ( selectBios(cfg.colorBiosPath, ".sv.bin.zip") ) {
 		loadColorBIOS();
 	}
 	cls(0);

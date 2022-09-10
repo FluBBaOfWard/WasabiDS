@@ -21,12 +21,13 @@ Misc:
 	.
 
 Games Not Working:
-	Cave Wonders.
-	Climber.
-	Hero Kid.
-	Juggler.
-	Linear Racing.
+	.
 Games Not Working Fixed:
+	Cave Wonders. TRB/TSB.
+	Climber. TRB/TSB.
+	Juggler. TRB/TSB.
+	Hero Kid. Timer IRQ.
+	Linear Racing. Timer IRQ.
 
 Games With Glitches:
 

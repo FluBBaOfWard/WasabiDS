@@ -60,12 +60,8 @@ int main(int argc, char **argv) {
 	if (argc > 1) {
 		enableExit = true;
 	}
-	maxRomSize = 0x800000 + 0x1000;
+	maxRomSize = 0x80000 + 0x1000;
 	romSpacePtr = malloc(maxRomSize);
-	if (romSpacePtr == NULL) {
-		maxRomSize = 0x200000 + 0x1000;
-		romSpacePtr = malloc(maxRomSize);
-	}
 	setupGraphics();
 
 	setupStream();

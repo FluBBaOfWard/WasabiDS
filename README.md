@@ -1,4 +1,4 @@
-# Wasabi V0.1.1
+# Wasabi V0.2.0
 
 <img align="right" width="220" src="./logo.png" />
 
@@ -6,7 +6,7 @@ This is a Watara/QuickShot Supervision emulator for the Nintendo DS.
 
 ## How to use:
 
-1. Create a folder named "nitroswan" in either the root of your flash card or in the data folder.
+1. Create a folder named "wasabi" in either the root of your flash card or in the data folder.
 This is where settings and save files end up.
 2. Now put game/bios files into a folder where you have (Supervision) roms.
 3. Depending on your flashcart you might have to DLDI patch the emulator.
@@ -33,7 +33,7 @@ To select between the tabs use R & L or the touchscreen.
 	Controller:
 		Autofire: Select if you want autofire.
 		Controller: 2P start a 2 player game.
-		Swap A/B: Swap which NDS button is mapped to which WS button.
+		Swap A/B: Swap which NDS button is mapped to which SV button.
 	Display:
 		Mono Palette: Here you can select the palette for B & W games.
 		Gamma: Lets you change the gamma ("brightness").
@@ -74,23 +74,21 @@ To select between the tabs use R & L or the touchscreen.
 
 
 ## Controls:
-	Start is mapped to WS Start.
-	Select is mapped to WS Sound.
-	In horizontal games the d-pad is mapped to WS X1-X4. A & B buttons are mapped to WS A & B.
-	Holding L maps the dpad to WS Y1-Y4.
-
-	In vertical games the d-pad is mapped to WS Y1-Y4. A, B, X & Y are mapped to WS X1-X4.
+	Start is mapped to SV Start.
+	Select is mapped to SV Select.
+	The d-pad is mapped to SV d-pad.
+	 A & B buttons are mapped to SV A & B.
 
 ## Games:
-	There are 2 games that I know of that has problems.
+	All games should "work".
 
 ## Credits:
 
 Huge thanks to Loopy for the incredible PocketNES, without it this emu would
 probably never have been made.
 Thanks to:
-Peter Trauner, Osman Celimli & Kevin Horton for docs about the Supervision.
-Dwedit for help and inspiration with a lot of things.
+	Peter Trauner & Kevin Horton for docs about the Supervision.
+	Osman Celimli for docs & help about the Supervision.
 
 
 Fredrik Ahlström
