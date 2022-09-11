@@ -7,7 +7,7 @@ extern "C" {
 
 #include "Emubase.h"
 
-#define FILEEXTENSIONS ".sv"
+#define FILEEXTENSIONS ".sv.bin"
 
 extern ConfigData cfg;
 

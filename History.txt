@@ -1,7 +1,7 @@
 Wasabi revision history
 -=-=-=-=-=-=-=-=-=-=-=-
 
-V0.2.0 - 2022-09-10 (FluBBa)
+V0.2.0 - 2022-09-11 (FluBBa)
    First release for Nintendo DS.
 
 V0.1.1 - 2022-08-24 (FluBBa)

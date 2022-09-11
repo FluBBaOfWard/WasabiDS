@@ -70,6 +70,7 @@
 		9C715146265661CE0084BE99 /* Memory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Memory.h; sourceTree = "<group>"; };
 		9CBC0C8E26DD7C2A0039D17E /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		9CC013FC2668FDD9005714F7 /* Emubase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Emubase.h; sourceTree = "<group>"; };
+		9CDC956928CE23FE0054CC47 /* SVAudio.s */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = SVAudio.s; sourceTree = "<group>"; };
 		A49D34381757E54900BD9B4B /* cpu.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = cpu.s; sourceTree = "<group>"; };
 		A49D343A1757E54900BD9B4B /* Equates.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Equates.h; sourceTree = "<group>"; };
 		A49D34401757E54900BD9B4B /* io.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = io.s; sourceTree = "<group>"; };
@@ -136,6 +137,7 @@
 				9C175BF428B63D1800293DA7 /* SVVideo.h */,
 				9C175BF228B63D1800293DA7 /* SVVideo.i */,
 				9C175BF328B63D1800293DA7 /* SVVideo.s */,
+				9CDC956928CE23FE0054CC47 /* SVAudio.s */,
 			);
 			path = KS5360;
 			sourceTree = "<group>";

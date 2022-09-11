@@ -31,7 +31,7 @@ soundReset:
 	stmfd sp!,{lr}
 	mov r0,#0
 	ldr svvptr,=ks5360_0
-//	bl wsAudioReset			;@ sound
+	bl svAudioReset			;@ sound
 	ldmfd sp!,{lr}
 	bx lr
 
@@ -52,13 +52,9 @@ VblSound2:					;@ r0=length, r1=pointer
 	ldr r2,muteSound
 	cmp r2,#0
 	bne silenceMix
-//	ldrb r2,muteSoundChip
-//	cmp r2,#0
-//	bne playSamples
 
 	ldr svvptr,=ks5360_0
-//	mov r0,r0,lsl#2
-//	bl wsAudioMixer
+	bl svAudioMixer
 	ldmfd sp!,{r0,r1,lr}
 	bx lr
 
@@ -112,10 +108,6 @@ muteSoundGUI:
 muteSoundChip:
 	.byte 0
 	.space 2
-
-soundLatch:
-	.byte 0
-	.space 3
 
 	.section .bss
 	.align 2

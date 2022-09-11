@@ -224,7 +224,7 @@ updateLCDRefresh:
 	.type updateLCDRefresh STT_FUNC
 ;@----------------------------------------------------------------------------
 	adr svvptr,ks5360_0
-	ldrb r1,[svvptr,#wsvLCDYSize]
+	ldrb r1,[svvptr,#svvLCDVSize]
 	b svRefW
 ;@----------------------------------------------------------------------------
 setScreenRefresh:			;@ r0 in = WS scan line count.
