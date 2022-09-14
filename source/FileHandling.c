@@ -22,7 +22,7 @@
 #include "Memory.h"
 #include "Supervision.h"
 
-static const char *const folderName = "nitroswan";
+static const char *const folderName = "wasabi";
 static const char *const settingName = "settings.cfg";
 
 ConfigData cfg;
