@@ -58,34 +58,6 @@ VblSound2:					;@ r0=length, r1=pointer
 	ldmfd sp!,{r0,r1,lr}
 	bx lr
 
-playSamples:
-	stmfd sp!,{r4-r6}
-	mov r12,r0
-	ldr r6,pcmReadPtr
-	ldr r4,pcmWritePtr
-	mov r2,#27
-//	subs r2,r4,r6
-//	addmi r2,r2,#0x1000
-	add r4,r6,r2
-	str r4,pcmReadPtr
-	ldr r3,=WAVBUFFER
-	mov r6,r6,lsl#20
-	mov r5,r0
-wavLoop:
-	ldrb r4,[r3,r6,lsr#20]
-	subs r5,r5,r2
-	addmi r6,r6,#0x00100000
-	addmi r5,r0
-	mov r4,r4,lsl#8
-	orr r4,r4,r4,lsl#16
-	str r4,[r1],#4
-	subs r12,r12,#1
-	bhi wavLoop
-
-	ldmfd sp!,{r4-r6}
-	ldmfd sp!,{r0,r1,lr}
-	bx lr
-
 silenceMix:
 	ldmfd sp!,{r0,r1}
 	mov r12,r0

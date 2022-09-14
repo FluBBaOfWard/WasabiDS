@@ -1,7 +1,5 @@
 WasabiDS Todo
 
-	Fix sound!
-
 GFX:
 	See SVVideo todo.
 
