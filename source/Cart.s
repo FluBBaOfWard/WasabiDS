@@ -9,10 +9,8 @@
 	.global cartFlags
 	.global romStart
 	.global bankSwitchCart
-	.global reBankSwitch89AB
-	.global reBankSwitchCDEF
+	.global reBankSwitchCart
 	.global BankSwitch89AB_W
-	.global BankSwitchCDEF_W
 	.global clearDirtyTiles
 
 	.global romSpacePtr
@@ -193,9 +191,9 @@ resetCartridgeBanks:
 	bl BankSwitchCDEF_W
 	ldmfd sp!,{pc}
 ;@----------------------------------------------------------------------------
-reBankSwitch89AB:				;@ 0x8000-0xBFFF
+reBankSwitchCart:				;@ r0 = LinkPort val, r1 = BankChip val
 ;@----------------------------------------------------------------------------
-//	ldrb r1,[svvptr,#wsvBnk0SlctX]
+	ldr m6502optbl,=m6502OpTable
 ;@----------------------------------------------------------------------------
 bankSwitchCart:					;@ r0 = LinkPort val, r1 = BankChip val
 ;@----------------------------------------------------------------------------
