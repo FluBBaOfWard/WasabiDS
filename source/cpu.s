@@ -2,7 +2,7 @@
 
 #include "Shared/nds_asm.h"
 #include "ARM6502/M6502mac.h"
-#include "KS5360/SVVideo.i"
+#include "KS5360/KS5360.i"
 
 #define CYCLE_PSL (246*2)
 

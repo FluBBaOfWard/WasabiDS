@@ -1,7 +1,7 @@
 #ifdef __arm__
 
 #include "Shared/nds_asm.h"
-#include "KS5360/SVVideo.i"
+#include "KS5360/KS5360.i"
 
 	.global gfxInit
 	.global gfxReset

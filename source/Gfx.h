@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include "KS5360/SVVideo.h"
+#include "KS5360/KS5360.h"
 
 extern u8 gFlicker;
 extern u8 gTwitch;

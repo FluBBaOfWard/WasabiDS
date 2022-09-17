@@ -1,6 +1,6 @@
 #ifdef __arm__
 
-#include "KS5360/SVVideo.i"
+#include "KS5360/KS5360.i"
 #include "ARM6502/M6502.i"
 
 	.global machineInit

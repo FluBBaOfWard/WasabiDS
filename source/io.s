@@ -1,7 +1,7 @@
 #ifdef __arm__
 
 #include "ARM6502/M6502.i"
-#include "KS5360/SVVideo.i"
+#include "KS5360/KS5360.i"
 
 	.global ioReset
 	.global refreshEMUjoypads

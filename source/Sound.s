@@ -1,6 +1,6 @@
 #ifdef __arm__
 
-#include "KS5360/SVVideo.i"
+#include "KS5360/KS5360.i"
 
 	.global soundInit
 	.global soundReset

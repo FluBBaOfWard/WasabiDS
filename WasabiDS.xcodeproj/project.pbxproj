@@ -24,9 +24,9 @@
 		9C175BEF28B63D1800293DA7 /* Version.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Version.h; sourceTree = "<group>"; };
 		9C175BF028B63D1800293DA7 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		9C175BF128B63D1800293DA7 /* KS5360_todo.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = KS5360_todo.txt; sourceTree = "<group>"; };
-		9C175BF228B63D1800293DA7 /* SVVideo.i */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c.preprocessed; path = SVVideo.i; sourceTree = "<group>"; };
+		9C175BF228B63D1800293DA7 /* KS5360.i */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c.preprocessed; path = KS5360.i; sourceTree = "<group>"; };
 		9C175BF328B63D1800293DA7 /* SVVideo.s */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = SVVideo.s; sourceTree = "<group>"; };
-		9C175BF428B63D1800293DA7 /* SVVideo.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SVVideo.h; sourceTree = "<group>"; };
+		9C175BF428B63D1800293DA7 /* KS5360.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = KS5360.h; sourceTree = "<group>"; };
 		9C175BF528B63D1800293DA7 /* History.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = History.txt; sourceTree = "<group>"; };
 		9C175BF628B64ABE00293DA7 /* SuperVisionTech.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = SuperVisionTech.txt; sourceTree = "<group>"; };
 		9C175BF728B65D3D00293DA7 /* Supervision_Tech.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = Supervision_Tech.txt; sourceTree = "<group>"; wrapsLines = 1; };
@@ -134,8 +134,8 @@
 				9C175BF028B63D1800293DA7 /* README.md */,
 				9C175BF528B63D1800293DA7 /* History.txt */,
 				9C175BEF28B63D1800293DA7 /* Version.h */,
-				9C175BF428B63D1800293DA7 /* SVVideo.h */,
-				9C175BF228B63D1800293DA7 /* SVVideo.i */,
+				9C175BF428B63D1800293DA7 /* KS5360.h */,
+				9C175BF228B63D1800293DA7 /* KS5360.i */,
 				9C175BF328B63D1800293DA7 /* SVVideo.s */,
 				9CDC956928CE23FE0054CC47 /* SVAudio.s */,
 			);
