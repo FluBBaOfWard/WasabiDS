@@ -29,7 +29,6 @@ soundInit:
 soundReset:
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{lr}
-	mov r0,#0
 	ldr svvptr,=ks5360_0
 	bl svAudioReset			;@ sound
 	ldmfd sp!,{lr}

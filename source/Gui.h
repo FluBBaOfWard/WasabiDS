@@ -29,7 +29,6 @@ void debugIOUnmappedR(u8 port);
 void debugIOUnmappedW(u8 port, u8 val);
 void debugIOUnimplR(u8 port);
 void debugIOUnimplW(u8 port, u8 val);
-void debugDivideError(void);
 void debugUndefinedInstruction(void);
 void debugCrashInstruction(void);
 
@@ -38,9 +37,6 @@ void swapABSet(void);
 
 void gammaSet(void);
 void contrastSet(void);
-void fgrLayerSet(void);
-void bgrLayerSet(void);
-void sprLayerSet(void);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -12,6 +12,7 @@ CPU:
 	See ARM6502 Todo.
 
 Sound:
+	Setting for mono/stereo?
 	See KS5360 todo.
 
 Misc:

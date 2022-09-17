@@ -13,7 +13,7 @@
 #include "ARM6502/Version.h"
 #include "KS5360/Version.h"
 
-#define EMUVERSION "V0.2.0 2022-09-16"
+#define EMUVERSION "V0.2.0 2022-09-17"
 
 #define ALLOW_SPEED_HACKS	(1<<17)
 #define ENABLE_HEADPHONES	(1<<18)
@@ -21,7 +21,6 @@
 
 static void paletteChange(void);
 static void machineSet(void);
-static void speedHackSet(void);
 static void refreshChgSet(void);
 
 static void setupWSVBackground(void);
@@ -33,14 +32,14 @@ static void updateGameInfo(void);
 const fptr fnMain[] = {nullUI, subUI, subUI, subUI, subUI, subUI, subUI, subUI, subUI, subUI};
 
 const fptr fnList0[] = {uiDummy};
-const fptr fnList1[] = {selectGame, loadState, saveState, loadNVRAM, saveNVRAM, saveSettings, ejectGame, resetGame, ui8};
+const fptr fnList1[] = {selectGame, loadState, saveState, saveSettings, ejectGame, resetGame, ui8};
 const fptr fnList2[] = {ui4, ui5, ui6, ui7, ui8};
 const fptr fnList3[] = {uiDummy};
-const fptr fnList4[] = {autoBSet, autoASet, controllerSet, swapABSet};
+const fptr fnList4[] = {autoBSet, autoASet, swapABSet};
 const fptr fnList5[] = {gammaSet, contrastSet, paletteChange};
-const fptr fnList6[] = {machineSet, selectBnWBios, selectColorBios, speedHackSet /*languageSet*/};
-const fptr fnList7[] = {speedSet, refreshChgSet, autoStateSet, autoNVRAMSet, autoSettingsSet, autoPauseGameSet, powerSaveSet, screenSwapSet, sleepSet};
-const fptr fnList8[] = {debugTextSet, fgrLayerSet, bgrLayerSet, sprLayerSet};
+const fptr fnList6[] = {machineSet};
+const fptr fnList7[] = {speedSet, refreshChgSet, autoStateSet, autoSettingsSet, autoPauseGameSet, powerSaveSet, screenSwapSet, sleepSet};
+const fptr fnList8[] = {debugTextSet};
 const fptr fnList9[] = {exitEmulator, backOutOfMenu};
 const fptr fnList10[] = {uiDummy};
 const fptr *const fnListX[] = {fnList0, fnList1, fnList2, fnList3, fnList4, fnList5, fnList6, fnList7, fnList8, fnList9, fnList10};
@@ -66,7 +65,7 @@ const char *const machTxt[]  = {"Auto", "SuperVision", "SuperVision TV-Link"};
 
 
 void setupGUI() {
-	emuSettings = AUTOPAUSE_EMULATION | AUTOLOAD_NVRAM | ALLOW_SPEED_HACKS | AUTOSLEEP_OFF;
+	emuSettings = AUTOPAUSE_EMULATION | AUTOSLEEP_OFF;
 	keysSetRepeat(25, 4);	// delay, repeat.
 	menuXItems[1] = ARRSIZE(fnList1) - (enableExit?0:1);
 	openMenu();
@@ -101,8 +100,6 @@ void uiFile() {
 	drawMenuItem("Load Game");
 	drawMenuItem("Load State");
 	drawMenuItem("Save State");
-	drawMenuItem("Load NVRAM");
-	drawMenuItem("Save NVRAM");
 	drawMenuItem("Save Settings");
 	drawMenuItem("Eject Game");
 	drawMenuItem("Reset Console");
@@ -124,12 +121,12 @@ void uiAbout() {
 	cls(1);
 	updateGameInfo();
 	drawTabs();
-	drawText(" B:        WS B button", 4, 0);
-	drawText(" A:        WS A button", 5, 0);
-	drawText(" Select:   Sound button", 6, 0);
-	drawText(" Start:    Start button", 7, 0);
+	drawText(" A:        SV A button", 4, 0);
+	drawText(" B:        SV B button", 5, 0);
+	drawText(" Start:    SV Start button", 6, 0);
+	drawText(" Select:   SV Select button", 7, 0);
 
-	drawText(gameInfoString, 9, 0);
+//	drawText(gameInfoString, 9, 0);
 
 	drawText(" WasabiDS    " EMUVERSION, 21, 0);
 	drawText(" KS5360      " KS5360VERSION, 22, 0);
@@ -140,7 +137,6 @@ void uiController() {
 	setupSubMenu("Controller Settings");
 	drawSubItem("B Autofire: ", autoTxt[autoB]);
 	drawSubItem("A Autofire: ", autoTxt[autoA]);
-	drawSubItem("Controller: ", ctrlTxt[(joyCfg>>29)&1]);
 	drawSubItem("Swap A-B:   ", autoTxt[(joyCfg>>10)&1]);
 }
 
@@ -154,10 +150,6 @@ void uiDisplay() {
 static void uiMachine() {
 	setupSubMenu("Machine Settings");
 	drawSubItem("Machine: ", machTxt[gMachineSet]);
-	drawSubItem("Select WS Bios -> ", NULL);
-	drawSubItem("Select WS Color Bios -> ", NULL);
-	drawSubItem("Cpu speed hacks: ", autoTxt[(emuSettings&ALLOW_SPEED_HACKS)>>17]);
-//	drawSubItem("Language: ", langTxt[gLang]);
 }
 
 void uiSettings() {
@@ -165,7 +157,6 @@ void uiSettings() {
 	drawSubItem("Speed: ", speedTxt[(emuSettings>>6)&3]);
 	drawSubItem("Allow Refresh Change: ", autoTxt[(emuSettings&ALLOW_REFRESH_CHG)>>19]);
 	drawSubItem("Autoload State: ", autoTxt[(emuSettings>>2)&1]);
-	drawSubItem("Autoload NVRAM: ", autoTxt[(emuSettings>>10)&1]);
 	drawSubItem("Autosave Settings: ", autoTxt[(emuSettings>>9)&1]);
 	drawSubItem("Autopause Game: ", autoTxt[emuSettings&1]);
 	drawSubItem("Powersave 2nd Screen: ",autoTxt[(emuSettings>>1)&1]);
@@ -176,9 +167,6 @@ void uiSettings() {
 void uiDebug() {
 	setupSubMenu("Debug");
 	drawSubItem("Debug Output: ", autoTxt[gDebugSet&1]);
-	drawSubItem("Disable Foreground: ", autoTxt[(gGfxMask>>1)&1]);
-	drawSubItem("Disable Background: ", autoTxt[gGfxMask&1]);
-	drawSubItem("Disable Sprites: ", autoTxt[(gGfxMask>>4)&1]);
 }
 
 
@@ -232,14 +220,11 @@ void debugIOUnmappedR(u8 port) {
 void debugIOUnmappedW(u8 port, u8 val) {
 	debugIO(port, val, "Unmapped W port:");
 }
-void debugDivideError() {
-	debugOutput("Divide Error.");
-}
 void debugUndefinedInstruction() {
 	debugOutput("Undefined Instruction.");
 }
 void debugCrashInstruction() {
-	debugOutput("CPU Crash! (0xF1)");
+	debugOutput("CPU Crash!");
 }
 
 //---------------------------------------------------------------------------------
@@ -248,12 +233,7 @@ void setupWSVBackground(void) {
 	memcpy(BG_PALETTE_SUB+0x80, SVControllerPal, SVControllerPalLen);
 }
 
-
 //---------------------------------------------------------------------------------
-/// Switch between Player 1 & Player 2 controls
-void controllerSet() {				// See io.s: refreshEMUjoypads
-	joyCfg ^= 0x20000000;
-}
 
 /// Swap A & B buttons
 void swapABSet() {
@@ -277,19 +257,6 @@ void contrastSet() {
 	settingsChanged = true;
 }
 
-/// Turn on/off rendering of foreground
-void fgrLayerSet() {
-	gGfxMask ^= 0x02;
-}
-/// Turn on/off rendering of background
-void bgrLayerSet() {
-	gGfxMask ^= 0x01;
-}
-/// Turn on/off rendering of sprites
-void sprLayerSet() {
-	gGfxMask ^= 0x10;
-}
-
 void paletteChange() {
 	gPaletteBank++;
 	if (gPaletteBank > 4) {
@@ -299,24 +266,12 @@ void paletteChange() {
 	paletteInit(gGammaValue);
 	settingsChanged = true;
 }
-/*
-void borderSet() {
-	bcolor++;
-	if (bcolor > 2) {
-		bcolor = 0;
-	}
-	makeborder();
-}
-*/
+
 void machineSet() {
 	gMachineSet++;
 	if (gMachineSet >= HW_SELECT_END) {
 		gMachineSet = 0;
 	}
-}
-
-void speedHackSet() {
-	emuSettings ^= ALLOW_SPEED_HACKS;
 }
 
 void refreshChgSet() {
