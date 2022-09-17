@@ -144,7 +144,7 @@ void uiDisplay() {
 	setupSubMenu("Display Settings");
 	drawSubItem("Gamma: ", brighTxt[gGammaValue]);
 	drawSubItem("Contrast: ", brighTxt[gContrastValue]);
-	drawSubItem("B&W Palette: ", palTxt[gPaletteBank]);
+	drawSubItem("Palette: ", palTxt[gPaletteBank]);
 }
 
 static void uiMachine() {

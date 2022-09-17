@@ -9,7 +9,7 @@ endif
 GAME_TITLE		:=	WasabiDS
 GAME_SUBTITLE1	:=	Watara Supervision Emulator
 GAME_SUBTITLE2	:=	www.ndsretro.com
-GAME_ICON		:=	$(CURDIR)/../WSVLogo.bmp
+GAME_ICON		:=	$(CURDIR)/../SV.bmp
 
 include $(DEVKITARM)/ds_rules
 

@@ -24,8 +24,6 @@ ioReset:
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{lr}
 
-//	bl intEepromReset
-
 	ldmfd sp!,{pc}
 
 ;@----------------------------------------------------------------------------
@@ -33,10 +31,6 @@ ioSaveState:			;@ In r0=destination. Out r0=size.
 	.type   ioSaveState STT_FUNC
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{lr}
-
-//	ldr r1,=rtcRegs
-//	mov r2,#0x100
-//	bl memcpy
 
 	ldmfd sp!,{lr}
 	mov r0,#0x100
@@ -46,8 +40,6 @@ ioLoadState:			;@ In r0=source. Out r0=size.
 	.type   ioLoadState STT_FUNC
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{lr}
-
-//	bl initSysMem
 
 	ldmfd sp!,{lr}
 ;@----------------------------------------------------------------------------

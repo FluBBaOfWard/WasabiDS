@@ -146,7 +146,7 @@ memoryMapInit:
 	ldr r1,=svRAM
 	str r1,[r0,#m6502MemTbl+0*4]		;@ 0 RAM
 	ldr r1,=svVRAM
-	str r1,[r0,#m6502MemTbl+1*4]		;@ 0 VRAM
+	str r1,[r0,#m6502MemTbl+2*4]		;@ 0 VRAM
 
 	ldr r1,=ram6502R
 	str r1,[r0,#m6502ReadTbl+0*4]
@@ -208,8 +208,6 @@ bankSwitchCart:					;@ r0 = LinkPort val, r1 = BankChip val
 ;@----------------------------------------------------------------------------
 BankSwitch89AB_W:				;@ 0x8000-0xBFFF
 ;@----------------------------------------------------------------------------
-//	strb r1,[svvptr,#wsvBnk0SlctX]
-
 	ldr r0,romMask
 	ldr r2,romSpacePtr
 	and r0,r0,r1
@@ -220,14 +218,8 @@ BankSwitch89AB_W:				;@ 0x8000-0xBFFF
 	str r0,[m6502optbl,#m6502MemTbl+5*4]
 	bx lr
 ;@----------------------------------------------------------------------------
-reBankSwitchCDEF:				;@ 0xC000-0xFFFF
-;@----------------------------------------------------------------------------
-//	ldrb r1,[svvptr,#wsvBnk1SlctX]
-;@----------------------------------------------------------------------------
 BankSwitchCDEF_W:				;@ 0xC000-0xFFFF
 ;@----------------------------------------------------------------------------
-//	strb r1,[svvptr,#wsvBnk1SlctX]
-
 	ldr r0,romMask
 	ldr r2,romSpacePtr
 	and r0,r0,r1
@@ -304,8 +296,6 @@ svSRAM:
 biosSpace:
 	.space 0x1000
 biosSpaceColor:
-	.space 0x2000
-biosSpaceCrystal:
 	.space 0x2000
 ;@----------------------------------------------------------------------------
 	.end
