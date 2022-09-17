@@ -60,6 +60,7 @@ WS_BIOS_INTERNAL:
 WSC_BIOS_INTERNAL:
 //	.incbin "wsroms/boot1.rom"
 
+	.section .ewram,"ax"
 	.align 2
 ;@----------------------------------------------------------------------------
 machineInit: 	;@ Called from C
@@ -80,7 +81,6 @@ machineInit: 	;@ Called from C
 	bl soundInit
 	bl cpuInit
 
-skipBiosSettings:
 	ldmfd sp!,{r4-r11,lr}
 	bx lr
 

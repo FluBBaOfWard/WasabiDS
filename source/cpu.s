@@ -16,7 +16,11 @@
 	.syntax unified
 	.arm
 
-	.section .text
+#if GBA
+	.section .ewram, "ax", %progbits	;@ For the GBA
+#else
+	.section .text						;@ For anything else
+#endif
 	.align 2
 ;@----------------------------------------------------------------------------
 run:		;@ Return after X frame(s)
@@ -99,8 +103,6 @@ cpuInit:					;@ Called by machineInit
 
 	mov r0,#CYCLE_PSL
 	str r0,m6502CyclesPerScanline
-//	mov r0,m6502optbl
-//	bl V30Init
 
 	ldmfd sp!,{m6502optbl,lr}
 	bx lr

@@ -14,8 +14,8 @@ void exitGUI(void);
 void quickSelectGame(void);
 void nullUINormal(int key);
 void nullUIDebug(int key);
-void resetGame(void);
 void ejectGame(void);
+void resetGame(void);
 
 void uiNullNormal(void);
 void uiFile(void);
@@ -32,7 +32,6 @@ void debugIOUnimplW(u8 port, u8 val);
 void debugUndefinedInstruction(void);
 void debugCrashInstruction(void);
 
-void controllerSet(void);
 void swapABSet(void);
 
 void gammaSet(void);
