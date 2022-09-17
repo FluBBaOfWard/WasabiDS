@@ -289,12 +289,7 @@ void checkMachine() {
 	char fileExt[8];
 	if ( gMachineSet == HW_AUTO ) {
 		getFileExtension(fileExt, currentFilename);
-		if ( romSpacePtr[gRomSize - 9] != 0 || strstr(fileExt, ".wsc") ) {
-			gMachine = HW_SUPERVISIONCOLOR;
-		}
-		else {
-			gMachine = HW_SUPERVISION;
-		}
+		gMachine = HW_SUPERVISION;
 	}
 	else {
 		gMachine = gMachineSet;
