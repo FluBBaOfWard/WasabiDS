@@ -184,7 +184,6 @@ memoryMapInit:
 resetCartridgeBanks:
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{lr}
-	ldr svvptr,=ks5360_0
 	mov r1,#0
 	bl BankSwitch89AB_W
 	mov r1,#-1
@@ -237,7 +236,7 @@ romNum:
 	.long 0						;@ romnumber
 romInfo:						;@
 emuFlags:
-	.byte 0						;@ emuflags      (label this so UI.C can take a peek) see Equates.h for bitfields
+	.byte 0						;@ emuflags      (label this so GUI.c can take a peek) see EmuSettings.h for bitfields
 //scaling:
 	.byte 0						;@ (display type)
 	.byte 0,0					;@ (sprite follow val)

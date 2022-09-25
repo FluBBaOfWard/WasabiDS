@@ -57,6 +57,7 @@ To select between the tabs use R & L or the touchscreen.
 		Autosleep: Doesn't work.
 	Debug:
 		Debug Output: Show FPS and logged text.
+		Step Frame: Emulate one frame.
 
 ### About:
 	Some info about the emulator and game...
@@ -77,7 +78,7 @@ Huge thanks to Loopy for the incredible PocketNES, without it this emu would
 probably never have been made.
 Thanks to:
 	Peter Trauner & Kevin Horton for docs about the Supervision.
-	Osman Celimli for docs, tests & help about the Supervision.
+	Osman Celimli for docs, tests & help about the Supervision. http://tailchao.com/Wataroo/
 
 
 Fredrik Ahlström

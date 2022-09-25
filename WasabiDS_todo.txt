@@ -16,7 +16,7 @@ Sound:
 	See KS5360 todo.
 
 Misc:
-	.
+	Run 2 machines when choosing TV-Link, show SV on bottom.
 
 Games Not Working:
 	.
@@ -34,4 +34,4 @@ Games With Glitches Fixed:
 	Kitchen War. - || -
 
 Speedhacks:
-	* Chou Aniki - Otoko no Tamafuda
+	.

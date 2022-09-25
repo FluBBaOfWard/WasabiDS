@@ -1,7 +1,8 @@
 #include <nds.h>
 
-#include "SuperVision.h"
+#include "Supervision.h"
 #include "SVBorder.h"
+#include "TVLink.h"
 #include "Cart.h"
 #include "Gfx.h"
 #include "ARM6502/M6502.h"
@@ -45,8 +46,17 @@ void setupSVBackground() {
 	vramSetBankF(VRAM_F_BG_EXT_PALETTE_SLOT23);
 }
 
+void setupTVBackground() {
+	vramSetBankF(VRAM_F_LCD);
+	decompress(TVLinkTiles, BG_TILE_RAM(1), LZ77Vram);
+	decompress(TVLinkMap, BG_MAP_RAM(2), LZ77Vram);
+	memcpy(VRAM_F, TVLinkPal, TVLinkPalLen);
+	vramSetBankF(VRAM_F_BG_EXT_PALETTE_SLOT23);
+}
+
 void setupEmuBackground() {
 //	if (gMachine == HW_SUPERVISION) {
 		setupSVBackground();
+//		setupTVBackground();
 //	}
 }

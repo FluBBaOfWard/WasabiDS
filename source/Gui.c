@@ -13,7 +13,7 @@
 #include "ARM6502/Version.h"
 #include "KS5360/Version.h"
 
-#define EMUVERSION "V0.2.0 2022-09-17"
+#define EMUVERSION "V0.2.1 2022-09-20"
 
 #define ALLOW_SPEED_HACKS	(1<<17)
 #define ENABLE_HEADPHONES	(1<<18)
@@ -39,7 +39,7 @@ const fptr fnList4[] = {autoBSet, autoASet, swapABSet};
 const fptr fnList5[] = {gammaSet, contrastSet, paletteChange};
 const fptr fnList6[] = {machineSet};
 const fptr fnList7[] = {speedSet, refreshChgSet, autoStateSet, autoSettingsSet, autoPauseGameSet, powerSaveSet, screenSwapSet, sleepSet};
-const fptr fnList8[] = {debugTextSet};
+const fptr fnList8[] = {debugTextSet, stepFrame};
 const fptr fnList9[] = {exitEmulator, backOutOfMenu};
 const fptr fnList10[] = {uiDummy};
 const fptr *const fnListX[] = {fnList0, fnList1, fnList2, fnList3, fnList4, fnList5, fnList6, fnList7, fnList8, fnList9, fnList10};
@@ -123,8 +123,8 @@ void uiAbout() {
 	drawTabs();
 	drawText(" A:        SV A button", 4, 0);
 	drawText(" B:        SV B button", 5, 0);
-	drawText(" Start:    SV Start button", 6, 0);
-	drawText(" Select:   SV Select button", 7, 0);
+	drawText(" X/Start:  SV Start button", 6, 0);
+	drawText(" Y/Select: SV Select button", 7, 0);
 
 //	drawText(gameInfoString, 9, 0);
 
@@ -167,6 +167,7 @@ void uiSettings() {
 void uiDebug() {
 	setupSubMenu("Debug");
 	drawSubItem("Debug Output: ", autoTxt[gDebugSet&1]);
+	drawSubItem("Step Frame ", NULL);
 }
 
 

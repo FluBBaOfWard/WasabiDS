@@ -7,6 +7,7 @@
 #define CYCLE_PSL (246*2)
 
 	.global run
+	.global stepFrame
 	.global cpuInit
 	.global cpuReset
 	.global frameTotal
@@ -23,7 +24,7 @@
 #endif
 	.align 2
 ;@----------------------------------------------------------------------------
-run:		;@ Return after X frame(s)
+run:						;@ Return after X frame(s)
 	.type run STT_FUNC
 ;@----------------------------------------------------------------------------
 	ldrh r0,waitCountIn
@@ -59,8 +60,7 @@ skipInput:
 svFrameLoop:
 ;@----------------------------------------------------------------------------
 	mov r0,#CYCLE_PSL
-	b m6502RunXCycles
-svM6502End:
+	bl m6502RunXCycles
 	ldr svvptr,=ks5360_0
 	bl svDoScanline
 	cmp r0,#0
@@ -96,31 +96,56 @@ waitCountOut:		.byte 0
 waitMaskOut:		.byte 0
 
 ;@----------------------------------------------------------------------------
+stepFrame:					;@ Return after 1 frame
+	.type stepFrame STT_FUNC
+;@----------------------------------------------------------------------------
+	stmfd sp!,{r4-r11,lr}
+	ldr m6502optbl,=m6502OpTable
+	add r1,m6502optbl,#m6502Regs
+	ldmia r1,{m6502nz-m6502pc,m6502zpage}	;@ Restore M6502 state
+;@----------------------------------------------------------------------------
+svStepLoop:
+;@----------------------------------------------------------------------------
+	mov r0,#CYCLE_PSL
+	bl m6502RunXCycles
+	ldr svvptr,=ks5360_0
+	bl svDoScanline
+	cmp r0,#0
+	bne svStepLoop
+
+	mov r0,#CYCLE_PSL
+	bl m6502RunXCycles
+	ldr svvptr,=ks5360_0
+	bl svDoScanline
+;@----------------------------------------------------------------------------
+	add r0,m6502optbl,#m6502Regs
+	stmia r0,{m6502nz-m6502pc,m6502zpage}	;@ Save M6502 state
+
+	ldr r1,frameTotal
+	add r1,r1,#1
+	str r1,frameTotal
+
+	ldmfd sp!,{r4-r11,lr}
+	bx lr
+;@----------------------------------------------------------------------------
 cpuInit:					;@ Called by machineInit
 ;@----------------------------------------------------------------------------
-	stmfd sp!,{m6502optbl,lr}
-	ldr m6502optbl,=m6502OpTable
+	stmfd sp!,{lr}
 
 	mov r0,#CYCLE_PSL
 	str r0,m6502CyclesPerScanline
 
-	ldmfd sp!,{m6502optbl,lr}
+	ldmfd sp!,{lr}
 	bx lr
 ;@----------------------------------------------------------------------------
 cpuReset:					;@ Called by loadCart/resetGame
 ;@----------------------------------------------------------------------------
-	stmfd sp!,{m6502optbl,lr}
-	ldr m6502optbl,=m6502OpTable
+	stmfd sp!,{lr}
 
-	adr r0,svM6502End
-	str r0,[m6502optbl,#m6502NextTimeout]
-	str r0,[m6502optbl,#m6502NextTimeout_]
-
-	mov r0,m6502optbl
-	mov r0,#0
+	ldr r0,=m6502OpTable
 	bl m6502Reset
 
-	ldmfd sp!,{m6502optbl,lr}
+	ldmfd sp!,{lr}
 	bx lr
 ;@----------------------------------------------------------------------------
 	.end

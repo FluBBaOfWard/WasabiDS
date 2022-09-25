@@ -31,7 +31,7 @@ ioReset:
 	ldmfd sp!,{pc}
 
 ;@----------------------------------------------------------------------------
-ioSaveState:			;@ In r0=destination. Out r0=size.
+ioSaveState:				;@ In r0=destination. Out r0=size.
 	.type   ioSaveState STT_FUNC
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{lr}
@@ -40,14 +40,14 @@ ioSaveState:			;@ In r0=destination. Out r0=size.
 	mov r0,#0x100
 	bx lr
 ;@----------------------------------------------------------------------------
-ioLoadState:			;@ In r0=source. Out r0=size.
+ioLoadState:				;@ In r0=source. Out r0=size.
 	.type   ioLoadState STT_FUNC
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{lr}
 
 	ldmfd sp!,{lr}
 ;@----------------------------------------------------------------------------
-ioGetStateSize:		;@ Out r0=state size.
+ioGetStateSize:				;@ Out r0=state size.
 	.type   ioGetStateSize STT_FUNC
 ;@----------------------------------------------------------------------------
 	mov r0,#0x100
@@ -72,6 +72,10 @@ refreshEMUjoypads:			;@ Call every frame
 
 	and r1,r4,#0x0C				;@ NDS Select/Start
 	orr r0,r0,r1,lsl#4			;@ SV Select/Start
+	tst r4,#0x400				;@ NDS X button
+	orrne r0,r0,#0x80			;@ SV Start
+	tst r4,#0x800				;@ NDS Y button
+	orrne r0,r0,#0x40			;@ SV Select
 
 	ands r1,r3,#3				;@ A/B buttons
 	cmpne r1,#3

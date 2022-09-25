@@ -11,7 +11,6 @@
 #include "Shared/EmuMenu.h"
 #include "Shared/EmuSettings.h"
 #include "Shared/FileHelper.h"
-#include "Shared/Unzip/unzipnds.h"
 #include "Shared/AsmExtra.h"
 #include "Main.h"
 #include "Gui.h"
@@ -20,7 +19,6 @@
 #include "Gfx.h"
 #include "io.h"
 #include "Memory.h"
-#include "Supervision.h"
 
 static const char *const folderName = "wasabi";
 static const char *const settingName = "settings.cfg";
@@ -136,16 +134,15 @@ void saveSettings() {
 }
 
 void loadNVRAM() {
-	FILE *wssFile;
+	FILE *svsFile;
 	char nvramName[FILENAMEMAXLENGTH];
 	int saveSize = 0;
 	void *nvMem = NULL;
 
-	strlcpy(nvramName, currentFilename, sizeof(nvramName));
 	if (sramSize > 0) {
 		saveSize = sramSize;
 		nvMem = svSRAM;
-		setFileExtension(nvramName, ".ram", sizeof(nvramName));
+		setFileExtension(nvramName, currentFilename, ".ram", sizeof(nvramName));
 	}
 	else {
 		return;
@@ -153,12 +150,12 @@ void loadNVRAM() {
 	if (findFolder(folderName)) {
 		return;
 	}
-	if ( (wssFile = fopen(nvramName, "r")) ) {
-		if (fread(nvMem, 1, saveSize, wssFile) != saveSize) {
+	if ( (svsFile = fopen(nvramName, "r")) ) {
+		if (fread(nvMem, 1, saveSize, svsFile) != saveSize) {
 			infoOutput("Bad NVRAM file:");
 			infoOutput(nvramName);
 		}
-		fclose(wssFile);
+		fclose(svsFile);
 		infoOutput("Loaded NVRAM.");
 	}
 	else {
@@ -168,16 +165,15 @@ void loadNVRAM() {
 }
 
 void saveNVRAM() {
-	FILE *wssFile;
+	FILE *svsFile;
 	char nvramName[FILENAMEMAXLENGTH];
 	int saveSize = 0;
 	void *nvMem = NULL;
 
-	strlcpy(nvramName, currentFilename, sizeof(nvramName));
 	if (sramSize > 0) {
 		saveSize = sramSize;
 		nvMem = svSRAM;
-		setFileExtension(nvramName, ".ram", sizeof(nvramName));
+		setFileExtension(nvramName, currentFilename, ".ram", sizeof(nvramName));
 	}
 	else {
 		return;
@@ -185,11 +181,11 @@ void saveNVRAM() {
 	if (findFolder(folderName)) {
 		return;
 	}
-	if ( (wssFile = fopen(nvramName, "w")) ) {
-		if (fwrite(nvMem, 1, saveSize, wssFile) != saveSize) {
+	if ( (svsFile = fopen(nvramName, "w")) ) {
+		if (fwrite(nvMem, 1, saveSize, svsFile) != saveSize) {
 			infoOutput("Couldn't write correct number of bytes.");
 		}
-		fclose(wssFile);
+		fclose(svsFile);
 		infoOutput("Saved NVRAM.");
 	}
 	else {
@@ -199,57 +195,11 @@ void saveNVRAM() {
 }
 
 void loadState() {
-	FILE *file;
-	u32 *statePtr;
-	char stateName[FILENAMEMAXLENGTH];
-
-	if (findFolder(folderName)) {
-		return;
-	}
-	strlcpy(stateName, currentFilename, sizeof(stateName));
-	setFileExtension(stateName, ".sta", sizeof(stateName));
-	int stateSize = getStateSize();
-	if ( (file = fopen(stateName, "r")) ) {
-		if ( (statePtr = malloc(stateSize)) ) {
-			cls(0);
-			drawText("        Loading state...", 11, 0);
-			fread(statePtr, 1, stateSize, file);
-			unpackState(statePtr);
-			free(statePtr);
-			infoOutput("Loaded state.");
-		} else {
-			infoOutput("Couldn't alloc mem for state.");
-		}
-		fclose(file);
-	}
-	return;
+	loadDeviceState(folderName);
 }
 
 void saveState() {
-	FILE *file;
-	u32 *statePtr;
-	char stateName[FILENAMEMAXLENGTH];
-
-	if (findFolder(folderName)) {
-		return;
-	}
-	strlcpy(stateName, currentFilename, sizeof(stateName));
-	setFileExtension(stateName, ".sta", sizeof(stateName));
-	int stateSize = getStateSize();
-	if ( (file = fopen(stateName, "w")) ) {
-		if ( (statePtr = malloc(stateSize)) ) {
-			cls(0);
-			drawText("        Saving state...", 11, 0);
-			packState(statePtr);
-			fwrite(statePtr, 1, stateSize, file);
-			free(statePtr);
-			infoOutput("Saved state.");
-		}
-		else {
-			infoOutput("Couldn't alloc mem for state.");
-		}
-		fclose(file);
-	}
+	saveDeviceState(folderName);
 }
 
 //---------------------------------------------------------------------------------

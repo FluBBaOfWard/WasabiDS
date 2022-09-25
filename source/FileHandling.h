@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #include "Emubase.h"
+#include "Supervision.h"
 
 #define FILEEXTENSIONS ".sv.bin"
 
