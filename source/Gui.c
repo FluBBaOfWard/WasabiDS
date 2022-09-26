@@ -13,7 +13,7 @@
 #include "ARM6502/Version.h"
 #include "KS5360/Version.h"
 
-#define EMUVERSION "V0.2.1 2022-09-20"
+#define EMUVERSION "V0.2.1 2022-09-26"
 
 #define ALLOW_SPEED_HACKS	(1<<17)
 #define ENABLE_HEADPHONES	(1<<18)
@@ -58,12 +58,13 @@ const char *const brighTxt[] = {"I", "II", "III", "IIII", "IIIII"};
 const char *const ctrlTxt[]  = {"1P", "2P"};
 const char *const dispTxt[]  = {"Unscaled", "Scaled"};
 const char *const flickTxt[] = {"No Flicker", "Flicker"};
+
+const char *const machTxt[]  = {"Auto", "Supervision", "Supervision TV-Link"};
 const char *const bordTxt[]  = {"Black", "Border Color", "None"};
 const char *const palTxt[]   = {"Green", "Black & White", "Red", "Blue", "Classic"};
 const char *const langTxt[]  = {"Japanese", "English"};
-const char *const machTxt[]  = {"Auto", "SuperVision", "SuperVision TV-Link"};
 
-
+/// This is called at the start of the emulator
 void setupGUI() {
 	emuSettings = AUTOPAUSE_EMULATION | AUTOSLEEP_OFF;
 	keysSetRepeat(25, 4);	// delay, repeat.

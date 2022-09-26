@@ -1,6 +1,5 @@
 #ifdef __arm__
 
-#include "Shared/nds_asm.h"
 #include "ARM6502/M6502mac.h"
 #include "KS5360/KS5360.i"
 
@@ -52,7 +51,7 @@ runStart:
 //	and r0,r3,#0x04				;@ NDS Select?
 
 	bl refreshEMUjoypads
-skipInput:
+
 	ldr m6502optbl,=m6502OpTable
 	add r1,m6502optbl,#m6502Regs
 	ldmia r1,{m6502nz-m6502pc,m6502zpage}	;@ Restore M6502 state
@@ -89,7 +88,7 @@ svFrameLoop:
 ;@----------------------------------------------------------------------------
 m6502CyclesPerScanline:	.long 0
 joyClick:			.long 0
-frameTotal:			.long 0		;@ Let ui.c see frame count for savestates
+frameTotal:			.long 0		;@ Let GUI.c see frame count for savestates
 waitCountIn:		.byte 0
 waitMaskIn:			.byte 0
 waitCountOut:		.byte 0

@@ -194,6 +194,8 @@
 				9C50820C25D45A9B00A8E1BA /* Main.c */,
 				9C50821025D45A9B00A8E1BA /* Gui.h */,
 				9C50820D25D45A9B00A8E1BA /* Gui.c */,
+				9C50820B25D45A9B00A8E1BA /* FileHandling.h */,
+				9C50820A25D45A9B00A8E1BA /* FileHandling.c */,
 				9C4EB1C5271CB16A0072D38E /* Supervision.h */,
 				9C4EB1C4271CB16A0072D38E /* Supervision.c */,
 				9C50820525D45A9A00A8E1BA /* Cart.h */,
@@ -208,8 +210,6 @@
 				9C50820825D45A9A00A8E1BA /* Gfx.s */,
 				9C715146265661CE0084BE99 /* Memory.h */,
 				9C50820E25D45A9B00A8E1BA /* Memory.s */,
-				9C50820B25D45A9B00A8E1BA /* FileHandling.h */,
-				9C50820A25D45A9B00A8E1BA /* FileHandling.c */,
 			);
 			path = source;
 			sourceTree = "<group>";

@@ -74,7 +74,6 @@ int main(int argc, char **argv) {
 	if ( initFileHelper() ) {
 		loadSettings();
 		loadBnWBIOS();
-		loadColorBIOS();
 		if (argc > 1) {
 			loadGame(argv[1]);
 			setMuteSoundGUI();

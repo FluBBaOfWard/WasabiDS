@@ -1,7 +1,7 @@
 Wasabi revision history
 -=-=-=-=-=-=-=-=-=-=-=-
 
-V0.2.1 - 2022-09-25 (FluBBa)
+V0.2.1 - 2022-09-26 (FluBBa)
    Ported back to Nintendo GBA devkitPro.
    (NDS) Added mapping of X & Y as Start and Select.
    Added Frame stepping.

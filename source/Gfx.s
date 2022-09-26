@@ -15,7 +15,6 @@
 	.global setScreenRefresh
 
 	.global gfxState
-	.global gGammaValue
 	.global gFlicker
 	.global gTwitch
 	.global gGfxMask
