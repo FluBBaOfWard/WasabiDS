@@ -13,7 +13,7 @@
 #include "ARM6502/Version.h"
 #include "KS5360/Version.h"
 
-#define EMUVERSION "V0.2.1 2022-09-26"
+#define EMUVERSION "V0.2.2 2022-10-05"
 
 #define ALLOW_SPEED_HACKS	(1<<17)
 #define ENABLE_HEADPHONES	(1<<18)
@@ -27,12 +27,11 @@ static void setupWSVBackground(void);
 
 static void uiMachine(void);
 static void uiDebug(void);
-static void updateGameInfo(void);
 
 const fptr fnMain[] = {nullUI, subUI, subUI, subUI, subUI, subUI, subUI, subUI, subUI, subUI};
 
 const fptr fnList0[] = {uiDummy};
-const fptr fnList1[] = {selectGame, loadState, saveState, saveSettings, ejectGame, resetGame, ui8};
+const fptr fnList1[] = {selectGame, loadState, saveState, saveSettings, ejectGame, resetGame, ui9};
 const fptr fnList2[] = {ui4, ui5, ui6, ui7, ui8};
 const fptr fnList3[] = {uiDummy};
 const fptr fnList4[] = {autoBSet, autoASet, swapABSet};
@@ -45,11 +44,9 @@ const fptr fnList10[] = {uiDummy};
 const fptr *const fnListX[] = {fnList0, fnList1, fnList2, fnList3, fnList4, fnList5, fnList6, fnList7, fnList8, fnList9, fnList10};
 u8 menuXItems[] = {ARRSIZE(fnList0), ARRSIZE(fnList1), ARRSIZE(fnList2), ARRSIZE(fnList3), ARRSIZE(fnList4), ARRSIZE(fnList5), ARRSIZE(fnList6), ARRSIZE(fnList7), ARRSIZE(fnList8), ARRSIZE(fnList9), ARRSIZE(fnList10)};
 const fptr drawUIX[] = {uiNullNormal, uiFile, uiOptions, uiAbout, uiController, uiDisplay, uiMachine, uiSettings, uiDebug, uiDummy, uiDummy};
-const u8 menuXBack[] = {0,0,0,0,2,2,2,2,2,1,1};
 
 u8 gGammaValue = 0;
 u8 gContrastValue = 1;
-char gameInfoString[32];
 
 const char *const autoTxt[]  = {"Off", "On", "With R"};
 const char *const speedTxt[] = {"Normal", "200%", "Max", "50%"};
@@ -74,10 +71,6 @@ void setupGUI() {
 
 /// This is called when going from emu to ui.
 void enterGUI() {
-	if (updateSettingsFromSV() && (emuSettings & AUTOSAVE_SETTINGS)) {
-		saveSettings();
-		settingsChanged = false;
-	}
 }
 
 /// This is called going from ui to emu.
@@ -120,55 +113,52 @@ void uiOptions() {
 
 void uiAbout() {
 	cls(1);
-	updateGameInfo();
 	drawTabs();
-	drawText(" A:        SV A button", 4, 0);
-	drawText(" B:        SV B button", 5, 0);
-	drawText(" X/Start:  SV Start button", 6, 0);
-	drawText(" Y/Select: SV Select button", 7, 0);
+	drawMenuText("A:        SV A button", 4, 0);
+	drawMenuText("B:        SV B button", 5, 0);
+	drawMenuText("X/Start:  SV Start button", 6, 0);
+	drawMenuText("Y/Select: SV Select button", 7, 0);
 
-//	drawText(gameInfoString, 9, 0);
-
-	drawText(" WasabiDS    " EMUVERSION, 21, 0);
-	drawText(" KS5360      " KS5360VERSION, 22, 0);
-	drawText(" ARM6502     " ARM6502VERSION, 23, 0);
+	drawMenuText("WasabiDS     " EMUVERSION, 21, 0);
+	drawMenuText("KS5360       " KS5360VERSION, 22, 0);
+	drawMenuText("ARM6502      " ARM6502VERSION, 23, 0);
 }
 
 void uiController() {
 	setupSubMenu("Controller Settings");
-	drawSubItem("B Autofire: ", autoTxt[autoB]);
-	drawSubItem("A Autofire: ", autoTxt[autoA]);
-	drawSubItem("Swap A-B:   ", autoTxt[(joyCfg>>10)&1]);
+	drawSubItem("B Autofire:", autoTxt[autoB]);
+	drawSubItem("A Autofire:", autoTxt[autoA]);
+	drawSubItem("Swap A-B:  ", autoTxt[(joyCfg>>10)&1]);
 }
 
 void uiDisplay() {
 	setupSubMenu("Display Settings");
-	drawSubItem("Gamma: ", brighTxt[gGammaValue]);
-	drawSubItem("Contrast: ", brighTxt[gContrastValue]);
-	drawSubItem("Palette: ", palTxt[gPaletteBank]);
+	drawSubItem("Gamma:", brighTxt[gGammaValue]);
+	drawSubItem("Contrast:", brighTxt[gContrastValue]);
+	drawSubItem("Palette:", palTxt[gPaletteBank]);
 }
 
 static void uiMachine() {
 	setupSubMenu("Machine Settings");
-	drawSubItem("Machine: ", machTxt[gMachineSet]);
+	drawSubItem("Machine:", machTxt[gMachineSet]);
 }
 
 void uiSettings() {
 	setupSubMenu("Settings");
-	drawSubItem("Speed: ", speedTxt[(emuSettings>>6)&3]);
-	drawSubItem("Allow Refresh Change: ", autoTxt[(emuSettings&ALLOW_REFRESH_CHG)>>19]);
-	drawSubItem("Autoload State: ", autoTxt[(emuSettings>>2)&1]);
-	drawSubItem("Autosave Settings: ", autoTxt[(emuSettings>>9)&1]);
-	drawSubItem("Autopause Game: ", autoTxt[emuSettings&1]);
-	drawSubItem("Powersave 2nd Screen: ",autoTxt[(emuSettings>>1)&1]);
-	drawSubItem("Emulator on Bottom: ", autoTxt[(emuSettings>>8)&1]);
-	drawSubItem("Autosleep: ", sleepTxt[(emuSettings>>4)&3]);
+	drawSubItem("Speed:", speedTxt[(emuSettings>>6)&3]);
+	drawSubItem("Allow Refresh Change:", autoTxt[(emuSettings&ALLOW_REFRESH_CHG)>>19]);
+	drawSubItem("Autoload State:", autoTxt[(emuSettings>>2)&1]);
+	drawSubItem("Autosave Settings:", autoTxt[(emuSettings>>9)&1]);
+	drawSubItem("Autopause Game:", autoTxt[emuSettings&1]);
+	drawSubItem("Powersave 2nd Screen:",autoTxt[(emuSettings>>1)&1]);
+	drawSubItem("Emulator on Bottom:", autoTxt[(emuSettings>>8)&1]);
+	drawSubItem("Autosleep:", sleepTxt[(emuSettings>>4)&3]);
 }
 
 void uiDebug() {
 	setupSubMenu("Debug");
-	drawSubItem("Debug Output: ", autoTxt[gDebugSet&1]);
-	drawSubItem("Step Frame ", NULL);
+	drawSubItem("Debug Output:", autoTxt[gDebugSet&1]);
+	drawSubItem("Step Frame", NULL);
 }
 
 
@@ -193,11 +183,6 @@ void resetGame() {
 	loadCart();
 }
 
-void updateGameInfo() {
-	char catalog[8];
-	char2HexStr(catalog, gGameID);
-	strlMerge(gameInfoString, " Game #: 0x", catalog, sizeof(gameInfoString));
-}
 //---------------------------------------------------------------------------------
 void debugIO(u8 port, u8 val, const char *message) {
 	char debugString[32];

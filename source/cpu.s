@@ -88,7 +88,7 @@ svFrameLoop:
 ;@----------------------------------------------------------------------------
 m6502CyclesPerScanline:	.long 0
 joyClick:			.long 0
-frameTotal:			.long 0		;@ Let GUI.c see frame count for savestates
+frameTotal:			.long 0		;@ Let Gui.c see frame count for savestates
 waitCountIn:		.byte 0
 waitMaskIn:			.byte 0
 waitCountOut:		.byte 0
@@ -111,11 +111,6 @@ svStepLoop:
 	bl svDoScanline
 	cmp r0,#0
 	bne svStepLoop
-
-	mov r0,#CYCLE_PSL
-	bl m6502RunXCycles
-	ldr svvptr,=ks5360_0
-	bl svDoScanline
 ;@----------------------------------------------------------------------------
 	add r0,m6502optbl,#m6502Regs
 	stmia r0,{m6502nz-m6502pc,m6502zpage}	;@ Save M6502 state

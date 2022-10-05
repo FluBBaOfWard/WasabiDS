@@ -58,20 +58,6 @@ int initSettings() {
 	return 0;
 }
 
-bool updateSettingsFromSV() {
-	int val = 0;
-	bool changed = false;
-
-	if (cfg.language != val) {
-		cfg.language = val;
-		gLang = val;
-		changed = true;
-	}
-	settingsChanged |= changed;
-
-	return changed;
-}
-
 int loadSettings() {
 	FILE *file;
 
@@ -134,9 +120,8 @@ void loadNVRAM() {
 	int saveSize = 0;
 	void *nvMem = NULL;
 
-	if (sramSize > 0) {
-		saveSize = sramSize;
-		nvMem = svSRAM;
+	if (0 > 0) {
+		nvMem = svRAM;
 		setFileExtension(nvramName, currentFilename, ".ram", sizeof(nvramName));
 	}
 	else {
@@ -165,9 +150,8 @@ void saveNVRAM() {
 	int saveSize = 0;
 	void *nvMem = NULL;
 
-	if (sramSize > 0) {
-		saveSize = sramSize;
-		nvMem = svSRAM;
+	if (0 > 0) {
+		nvMem = svRAM;
 		setFileExtension(nvramName, currentFilename, ".ram", sizeof(nvramName));
 	}
 	else {
@@ -223,7 +207,7 @@ bool loadGame(const char *gameName) {
 
 void selectGame() {
 	pauseEmulation = true;
-	setSelectedMenu(9);
+	ui10();
 	const char *gameName = browseForFileType(FILEEXTENSIONS".zip");
 	if (loadGame(gameName)) {
 		backOutOfMenu();
@@ -267,11 +251,9 @@ static int loadBIOS(void *dest, const char *fPath, const int maxSize) {
 }
 
 int loadBnWBIOS(void) {
-	if (loadBIOS(biosSpace, cfg.monoBiosPath, sizeof(biosSpace))) {
-		g_BIOSBASE_BNW = biosSpace;
+	if (loadBIOS(NULL, cfg.monoBiosPath, 0)) {
 		return 1;
 	}
-	g_BIOSBASE_BNW = NULL;
 	return 0;
 }
 

@@ -13,7 +13,6 @@ extern "C" {
 extern ConfigData cfg;
 
 int initSettings(void);
-bool updateSettingsFromSV(void);
 int loadSettings(void);
 void saveSettings(void);
 bool loadGame(const char *gameName);

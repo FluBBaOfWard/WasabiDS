@@ -43,11 +43,6 @@ gfxInit:					;@ Called from machineInit
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{lr}
 
-	ldr r0,=OAM_BUFFER1			;@ No stray sprites please
-	mov r1,#0x200+SCREEN_HEIGHT
-	mov r2,#0x100
-	bl memset_
-
 	bl svVideoInit
 	bl gfxWinInit
 
@@ -284,12 +279,6 @@ vblIrqHandler:
 
 	add r1,r6,#REG_DMA3SAD
 
-	ldr r2,dmaOamBuffer			;@ DMA3 src, OAM transfer:
-	mov r3,#OAM					;@ DMA3 dst
-	mov r4,#0x84000000			;@ noIRQ 32bit incsrc incdst
-	orr r4,r4,#128*2			;@ 128 sprites * 2 longwords
-	stmia r1,{r2-r4}			;@ DMA3 go
-
 	ldr r2,=EMUPALBUFF			;@ DMA3 src, Palette transfer:
 	mov r3,#BG_PALETTE			;@ DMA3 dst
 	mov r4,#0x84000000			;@ noIRQ 32bit incsrc incdst
@@ -303,9 +292,6 @@ vblIrqHandler:
 	ldrb r1,[svvptr,#wsvLatchedDispCtrl]
 //	tst r1,#0x01
 //	biceq r0,r0,#0x0100			;@ Turn off Bg
-//	biceq r0,r0,#0x0200			;@ Turn off Fg
-//	tst r1,#0x20				;@ Win for Fg on?
-//	biceq r0,r0,#0x2000			;@ Turn off Fg-Window
 	ldrb r2,gGfxMask
 	bic r0,r0,r2,lsl#8
 	strh r0,[r6,#REG_DISPCNT]
@@ -371,11 +357,6 @@ endFrameGfx:				;@ Called just before screen end (~line 159)	(r0-r3 safe to use)
 	bl copyScrollValues
 ;@--------------------------
 
-	ldr r0,tmpOamBuffer
-	ldr r1,dmaOamBuffer
-	str r0,dmaOamBuffer
-	str r1,tmpOamBuffer
-
 	ldr r0,tmpScroll
 	ldr r1,dmaScroll
 	str r0,dmaScroll
@@ -388,8 +369,6 @@ endFrameGfx:				;@ Called just before screen end (~line 159)	(r0-r3 safe to use)
 	bx lr
 
 ;@----------------------------------------------------------------------------
-tmpOamBuffer:	.long OAM_BUFFER1
-dmaOamBuffer:	.long OAM_BUFFER2
 tmpScroll:		.long SCROLLBUFF1
 dmaScroll:		.long SCROLLBUFF2
 
@@ -452,10 +431,6 @@ GFX_BG1CNT:
 	.section .bss
 #endif
 	.align 2
-OAM_BUFFER1:
-	.space 0x400
-OAM_BUFFER2:
-	.space 0x400
 SCROLLBUFF1:
 	.space 0x100*8				;@ Scrollbuffer.
 SCROLLBUFF2:

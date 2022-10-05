@@ -1,4 +1,4 @@
-# Wasabi V0.2.1
+# WasabiDS V0.2.2
 
 <img align="right" width="220" src="./logo.png" />
 

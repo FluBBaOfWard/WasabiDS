@@ -16,16 +16,9 @@
 	.global romSpacePtr
 	.global MEMMAPTBL_
 
-	.global biosBase
-	.global biosSpace
-	.global biosSpaceColor
-	.global g_BIOSBASE_BNW
-	.global g_BIOSBASE_COLOR
 	.global svRAM
 	.global svVRAM
 	.global DIRTYTILES
-	.global svSRAM
-	.global sramSize
 	.global gRomSize
 	.global maxRomSize
 	.global romMask
@@ -63,7 +56,7 @@ WSC_BIOS_INTERNAL:
 	.section .ewram,"ax"
 	.align 2
 ;@----------------------------------------------------------------------------
-machineInit: 	;@ Called from C
+machineInit: 				;@ Called from C
 	.type   machineInit STT_FUNC
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{r4-r11,lr}
@@ -87,36 +80,27 @@ machineInit: 	;@ Called from C
 	.section .ewram,"ax"
 	.align 2
 ;@----------------------------------------------------------------------------
-loadCart: 		;@ Called from C:
+loadCart: 					;@ Called from C
 	.type   loadCart STT_FUNC
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{r4-r11,lr}
 	ldr m6502optbl,=m6502OpTable
 
 	ldr r0,romSize
-	movs r1,r0,lsr#14		;@ 16kB blocks.
+	movs r1,r0,lsr#14			;@ 16kB blocks.
 	subne r1,r1,#1
-	str r1,romMask			;@ romMask=romBlocks-1
+	str r1,romMask				;@ romMask=romBlocks-1
 
 	bl resetCartridgeBanks
 
 	ldrb r5,gMachine
 	cmp r5,#HW_SUPERVISION
-	moveq r0,#1				;@ Set boot rom overlay (size small)
-	ldreq r1,g_BIOSBASE_BNW
-	ldreq r2,=WS_BIOS_INTERNAL
 	moveq r4,#SOC_ASWAN
-	movne r0,#2				;@ Set boot rom overlay (size big)
-	ldrne r1,g_BIOSBASE_COLOR
-	ldrne r2,=WSC_BIOS_INTERNAL
 	movne r4,#SOC_KS5360
 	strb r4,gSOC
-	cmp r1,#0
-	moveq r1,r2				;@ Use internal bios
-	str r1,biosBase
 
 
-	ldr r0,=svRAM			;@ Clear RAM
+	ldr r0,=svRAM				;@ Clear RAM
 	mov r1,#0x4000/4
 	bl memclr_
 	bl clearDirtyTiles
@@ -144,9 +128,9 @@ memoryMapInit:
 	ldr r0,=m6502OpTable
 
 	ldr r1,=svRAM
-	str r1,[r0,#m6502MemTbl+0*4]		;@ 0 RAM
+	str r1,[r0,#m6502MemTbl+0*4]	;@ 0 RAM
 	ldr r1,=svVRAM
-	str r1,[r0,#m6502MemTbl+2*4]		;@ 0 VRAM
+	str r1,[r0,#m6502MemTbl+2*4]	;@ 0 VRAM
 
 	ldr r1,=ram6502R
 	str r1,[r0,#m6502ReadTbl+0*4]
@@ -183,18 +167,28 @@ memoryMapInit:
 ;@----------------------------------------------------------------------------
 resetCartridgeBanks:
 ;@----------------------------------------------------------------------------
-	stmfd sp!,{lr}
+	stmfd sp!,{r4,lr}
+	ldr r4,romSpacePtr
+	ldr r0,=bankPointers
+	ldrb r2,romMask
+	mov r1,#0x1F
+bankLoop:
+	and r3,r2,r1
+	add r3,r4,r3,lsl#14
+	str r3,[r0,r1,lsl#2]
+	subs r1,r1,#1
+	bpl bankLoop
+
 	mov r1,#0
 	bl BankSwitch89AB_W
-	mov r1,#-1
 	bl BankSwitchCDEF_W
-	ldmfd sp!,{pc}
+	ldmfd sp!,{r4,pc}
 ;@----------------------------------------------------------------------------
-reBankSwitchCart:				;@ r0 = LinkPort val, r1 = BankChip val
+reBankSwitchCart:			;@ r0 = LinkPort val, r1 = BankChip val
 ;@----------------------------------------------------------------------------
 	ldr m6502optbl,=m6502OpTable
 ;@----------------------------------------------------------------------------
-bankSwitchCart:					;@ r0 = LinkPort val, r1 = BankChip val
+bankSwitchCart:				;@ r0 = LinkPort val, r1 = BankChip val
 ;@----------------------------------------------------------------------------
 	mov r1,r1,lsr#5
 	ldrb r2,romMask
@@ -205,26 +199,21 @@ bankSwitchCart:					;@ r0 = LinkPort val, r1 = BankChip val
 	and r1,r1,#1
 	orr r1,r1,r0,lsl#1
 ;@----------------------------------------------------------------------------
-BankSwitch89AB_W:				;@ 0x8000-0xBFFF
+BankSwitch89AB_W:			;@ 0x8000-0xBFFF
 ;@----------------------------------------------------------------------------
-	ldr r0,romMask
-	ldr r2,romSpacePtr
-	and r0,r0,r1
-	sub r2,r2,#0x8000
+	adr r2,bankPointers
+	and r1,r1,#0x1F
+	ldr r0,[r2,r1,lsl#2]
+	sub r0,r0,#0x8000
 
-	add r0,r2,r0,lsl#14		;@ 16kB blocks.
 	str r0,[m6502optbl,#m6502MemTbl+4*4]
 	str r0,[m6502optbl,#m6502MemTbl+5*4]
 	bx lr
 ;@----------------------------------------------------------------------------
-BankSwitchCDEF_W:				;@ 0xC000-0xFFFF
+BankSwitchCDEF_W:			;@ 0xC000-0xFFFF
 ;@----------------------------------------------------------------------------
-	ldr r0,romMask
-	ldr r2,romSpacePtr
-	and r0,r0,r1
-	sub r2,r2,#0xC000
-
-	add r0,r2,r0,lsl#14		;@ 16kB blocks.
+	ldr r0,bankPointers+31*4
+	sub r0,r0,#0xC000
 	str r0,[m6502optbl,#m6502MemTbl+6*4]
 	str r0,[m6502optbl,#m6502MemTbl+7*4]
 
@@ -236,7 +225,7 @@ romNum:
 	.long 0						;@ romnumber
 romInfo:						;@
 emuFlags:
-	.byte 0						;@ emuflags      (label this so GUI.c can take a peek) see EmuSettings.h for bitfields
+	.byte 0						;@ emuflags      (label this so Gui.c can take a peek) see EmuSettings.h for bitfields
 //scaling:
 	.byte 0						;@ (display type)
 	.byte 0,0					;@ (sprite follow val)
@@ -262,10 +251,6 @@ gGameID:
 
 romSpacePtr:
 	.long 0
-g_BIOSBASE_BNW:
-	.long 0
-g_BIOSBASE_COLOR:
-	.long 0
 gRomSize:
 romSize:
 	.long 0
@@ -273,10 +258,8 @@ maxRomSize:
 	.long 0
 romMask:
 	.long 0
-biosBase:
-	.long 0
-sramSize:
-	.long 0
+bankPointers:
+	.space 32*4
 
 #ifdef GBA
 	.section .sbss				;@ For the GBA
@@ -290,12 +273,6 @@ svVRAM:
 	.space 0x2000
 DIRTYTILES:
 	.space 0x200
-svSRAM:
-	.space 0x2000
-biosSpace:
-	.space 0x1000
-biosSpaceColor:
-	.space 0x2000
 ;@----------------------------------------------------------------------------
 	.end
 #endif // #ifdef __arm__
