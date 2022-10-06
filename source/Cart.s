@@ -84,7 +84,7 @@ loadCart: 					;@ Called from C
 	.type   loadCart STT_FUNC
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{r4-r11,lr}
-	ldr m6502optbl,=m6502OpTable
+	ldr m6502ptr,=m6502OpTable
 
 	ldr r0,romSize
 	movs r1,r0,lsr#14			;@ 16kB blocks.
@@ -186,7 +186,7 @@ bankLoop:
 ;@----------------------------------------------------------------------------
 reBankSwitchCart:			;@ r0 = LinkPort val, r1 = BankChip val
 ;@----------------------------------------------------------------------------
-	ldr m6502optbl,=m6502OpTable
+	ldr m6502ptr,=m6502OpTable
 ;@----------------------------------------------------------------------------
 bankSwitchCart:				;@ r0 = LinkPort val, r1 = BankChip val
 ;@----------------------------------------------------------------------------
@@ -206,16 +206,16 @@ BankSwitch89AB_W:			;@ 0x8000-0xBFFF
 	ldr r0,[r2,r1,lsl#2]
 	sub r0,r0,#0x8000
 
-	str r0,[m6502optbl,#m6502MemTbl+4*4]
-	str r0,[m6502optbl,#m6502MemTbl+5*4]
+	str r0,[m6502ptr,#m6502MemTbl+4*4]
+	str r0,[m6502ptr,#m6502MemTbl+5*4]
 	bx lr
 ;@----------------------------------------------------------------------------
 BankSwitchCDEF_W:			;@ 0xC000-0xFFFF
 ;@----------------------------------------------------------------------------
 	ldr r0,bankPointers+31*4
 	sub r0,r0,#0xC000
-	str r0,[m6502optbl,#m6502MemTbl+6*4]
-	str r0,[m6502optbl,#m6502MemTbl+7*4]
+	str r0,[m6502ptr,#m6502MemTbl+6*4]
+	str r0,[m6502ptr,#m6502MemTbl+7*4]
 
 	bx lr
 

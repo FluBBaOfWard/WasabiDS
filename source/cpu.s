@@ -52,8 +52,8 @@ runStart:
 
 	bl refreshEMUjoypads
 
-	ldr m6502optbl,=m6502OpTable
-	add r1,m6502optbl,#m6502Regs
+	ldr m6502ptr,=m6502OpTable
+	add r1,m6502ptr,#m6502Regs
 	ldmia r1,{m6502nz-m6502pc,m6502zpage}	;@ Restore M6502 state
 ;@----------------------------------------------------------------------------
 svFrameLoop:
@@ -66,7 +66,7 @@ svFrameLoop:
 	bne svFrameLoop
 
 ;@----------------------------------------------------------------------------
-	add r0,m6502optbl,#m6502Regs
+	add r0,m6502ptr,#m6502Regs
 	stmia r0,{m6502nz-m6502pc,m6502zpage}	;@ Save M6502 state
 	ldr r1,=fpsValue
 	ldr r0,[r1]
@@ -99,8 +99,8 @@ stepFrame:					;@ Return after 1 frame
 	.type stepFrame STT_FUNC
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{r4-r11,lr}
-	ldr m6502optbl,=m6502OpTable
-	add r1,m6502optbl,#m6502Regs
+	ldr m6502ptr,=m6502OpTable
+	add r1,m6502ptr,#m6502Regs
 	ldmia r1,{m6502nz-m6502pc,m6502zpage}	;@ Restore M6502 state
 ;@----------------------------------------------------------------------------
 svStepLoop:
@@ -112,7 +112,7 @@ svStepLoop:
 	cmp r0,#0
 	bne svStepLoop
 ;@----------------------------------------------------------------------------
-	add r0,m6502optbl,#m6502Regs
+	add r0,m6502ptr,#m6502Regs
 	stmia r0,{m6502nz-m6502pc,m6502zpage}	;@ Save M6502 state
 
 	ldr r1,frameTotal
