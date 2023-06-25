@@ -82,8 +82,8 @@ muteSoundChip:
 
 	.section .bss
 	.align 2
-WAVBUFFER:
-	.space 0x1000
+//WAVBUFFER:
+//	.space 0x1000
 ;@----------------------------------------------------------------------------
 	.end
 #endif // #ifdef __arm__

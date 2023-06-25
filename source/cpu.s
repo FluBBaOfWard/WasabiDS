@@ -1,6 +1,6 @@
 #ifdef __arm__
 
-#include "ARM6502/M6502mac.h"
+#include "ARM6502/M6502.i"
 #include "KS5360/KS5360.i"
 
 #define CYCLE_PSL (246*2)
@@ -9,9 +9,11 @@
 	.global stepFrame
 	.global cpuInit
 	.global cpuReset
+
 	.global frameTotal
 	.global waitMaskIn
 	.global waitMaskOut
+	.global m6502_0
 
 	.syntax unified
 	.arm
@@ -52,7 +54,7 @@ runStart:
 
 	bl refreshEMUjoypads
 
-	ldr m6502ptr,=m6502OpTable
+	ldr m6502ptr,=m6502_0
 	add r1,m6502ptr,#m6502Regs
 	ldmia r1,{m6502nz-m6502pc,m6502zpage}	;@ Restore M6502 state
 ;@----------------------------------------------------------------------------
@@ -67,7 +69,7 @@ svFrameLoop:
 
 ;@----------------------------------------------------------------------------
 	add r0,m6502ptr,#m6502Regs
-	stmia r0,{m6502nz-m6502pc,m6502zpage}	;@ Save M6502 state
+	stmia r0,{m6502nz-m6502pc}	;@ Save M6502 state
 	ldr r1,=fpsValue
 	ldr r0,[r1]
 	add r0,r0,#1
@@ -99,7 +101,7 @@ stepFrame:					;@ Return after 1 frame
 	.type stepFrame STT_FUNC
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{r4-r11,lr}
-	ldr m6502ptr,=m6502OpTable
+	ldr m6502ptr,=m6502_0
 	add r1,m6502ptr,#m6502Regs
 	ldmia r1,{m6502nz-m6502pc,m6502zpage}	;@ Restore M6502 state
 ;@----------------------------------------------------------------------------
@@ -128,6 +130,8 @@ cpuInit:					;@ Called by machineInit
 
 	mov r0,#CYCLE_PSL
 	str r0,m6502CyclesPerScanline
+	ldr r0,=m6502_0
+	bl m6502Init
 
 	ldmfd sp!,{lr}
 	bx lr
@@ -136,11 +140,23 @@ cpuReset:					;@ Called by loadCart/resetGame
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{lr}
 
-	ldr r0,=m6502OpTable
+	ldr r0,=m6502_0
 	bl m6502Reset
 
 	ldmfd sp!,{lr}
 	bx lr
+;@----------------------------------------------------------------------------
+#ifdef NDS
+	.section .dtcm, "ax", %progbits			;@ For the NDS
+#elif GBA
+	.section .iwram, "ax", %progbits		;@ For the GBA
+#else
+	.section .text
+#endif
+	.align 2
+;@----------------------------------------------------------------------------
+m6502_0:
+	.space m6502Size
 ;@----------------------------------------------------------------------------
 	.end
 #endif // #ifdef __arm__

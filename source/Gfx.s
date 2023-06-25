@@ -97,7 +97,6 @@ gfxWinInit:
 monoPalInit:
 	.type monoPalInit STT_FUNC
 ;@----------------------------------------------------------------------------
-	stmfd sp!,{r4,lr}
 	ldr r0,=gPaletteBank
 	ldrb r0,[r0]
 	adr r1,monoPalette
@@ -107,7 +106,6 @@ monoPalInit:
 	ldmia r1,{r2-r3}
 	stmia r0!,{r2-r3}
 
-	ldmfd sp!,{r4,lr}
 	bx lr
 ;@----------------------------------------------------------------------------
 monoPalette:

@@ -22,38 +22,11 @@ ConfigData cfg;
 
 //---------------------------------------------------------------------------------
 int initSettings() {
+	cfg.palette = 0;
 	cfg.gammaValue = 0;
 	cfg.emuSettings = AUTOPAUSE_EMULATION | AUTOLOAD_NVRAM;
 	cfg.sleepTime = 60*60*5;
 	cfg.controller = 0;					// Don't swap A/B
-	cfg.language = (PersonalData->language == 0) ? 0 : 1;
-	int col = 0;
-	switch (PersonalData->theme & 0xF) {
-		case 1:
-		case 4:
-			col = 4;	// Brown
-			break;
-		case 2:
-		case 3:
-		case 15:
-			col = 2;	// Red
-			break;
-		case 6:
-		case 7:
-		case 8:
-			col = 0;	// Green
-			break;
-		case 10:
-		case 11:
-		case 12:
-			col = 3;	// Blue
-			break;
-		default:
-			break;
-	}
-	col = 0;
-	cfg.palette = col;
-	gPaletteBank = col;
 
 	return 0;
 }
@@ -78,11 +51,12 @@ int loadSettings() {
 		return 1;
 	}
 
-	gGammaValue = cfg.gammaValue;
+	gPaletteBank   = cfg.palette;
+	gGammaValue    = cfg.gammaValue;
 	gContrastValue = cfg.contrastValue;
-	emuSettings  = cfg.emuSettings & ~EMUSPEED_MASK;	// Clear speed setting.
-	sleepTime    = cfg.sleepTime;
-	joyCfg       = (joyCfg & ~0x400)|((cfg.controller & 1)<<10);
+	emuSettings    = cfg.emuSettings & ~EMUSPEED_MASK;	// Clear speed setting.
+	sleepTime      = cfg.sleepTime;
+	joyCfg         = (joyCfg & ~0x400)|((cfg.controller & 1)<<10);
 	strlcpy(currentDir, cfg.currentPath, sizeof(currentDir));
 
 	infoOutput("Settings loaded.");
@@ -93,11 +67,12 @@ void saveSettings() {
 	FILE *file;
 
 	strcpy(cfg.magic,"cfg");
-	cfg.gammaValue  = gGammaValue;
-	cfg.contrastValue  = gContrastValue;
-	cfg.emuSettings = emuSettings & ~EMUSPEED_MASK;		// Clear speed setting.
-	cfg.sleepTime   = sleepTime;
-	cfg.controller  = (joyCfg>>10)&1;
+	cfg.palette       = gPaletteBank;
+	cfg.gammaValue    = gGammaValue;
+	cfg.contrastValue = gContrastValue;
+	cfg.emuSettings   = emuSettings & ~EMUSPEED_MASK;		// Clear speed setting.
+	cfg.sleepTime     = sleepTime;
+	cfg.controller    = (joyCfg>>10)&1;
 	strlcpy(cfg.currentPath, currentDir, sizeof(cfg.currentPath));
 
 	if (findFolder(folderName)) {
