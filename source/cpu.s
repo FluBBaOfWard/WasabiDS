@@ -115,7 +115,7 @@ svStepLoop:
 	bne svStepLoop
 ;@----------------------------------------------------------------------------
 	add r0,m6502ptr,#m6502Regs
-	stmia r0,{m6502nz-m6502pc,m6502zpage}	;@ Save M6502 state
+	stmia r0,{m6502nz-m6502pc}	;@ Save M6502 state
 
 	ldr r1,frameTotal
 	add r1,r1,#1
