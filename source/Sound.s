@@ -45,28 +45,24 @@ setMuteSoundGUI:
 ;@----------------------------------------------------------------------------
 VblSound2:					;@ r0=length, r1=pointer
 ;@----------------------------------------------------------------------------
-;@	mov r11,r11
-	stmfd sp!,{r0,r1,lr}
-
 	ldr r2,muteSound
 	cmp r2,#0
 	bne silenceMix
 
+	stmfd sp!,{r0,lr}
 	ldr svvptr,=ks5360_0
 	bl svAudioMixer
-	ldmfd sp!,{r0,r1,lr}
+	ldmfd sp!,{r0,lr}
 	bx lr
 
 silenceMix:
-	ldmfd sp!,{r0,r1}
-	mov r12,r0
+	mov r3,r0
 	ldr r2,=0x80008000
 silenceLoop:
-	subs r12,r12,#1
+	subs r3,r3,#1
 	strpl r2,[r1],#4
 	bhi silenceLoop
 
-	ldmfd sp!,{lr}
 	bx lr
 
 ;@----------------------------------------------------------------------------

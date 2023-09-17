@@ -1,6 +1,9 @@
 Wasabi revision history
 -=-=-=-=-=-=-=-=-=-=-=-
 
+V0.2.3 - 2023-09-17 (FluBBa)
+	Optimized cpu core.
+
 V0.2.2 - 2022-10-06 (FluBBa)
 	Added new debug menu.
 	Better menu traversing.

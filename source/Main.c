@@ -15,9 +15,6 @@
 #include "io.h"
 #include "Sound.h"
 
-#define sample_rate 31250
-#define buffer_size (256+10)
-
 static void checkTimeOut(void);
 static void setupGraphics(void);
 static void setupStream(void);
@@ -176,6 +173,7 @@ static void setupGraphics() {
 //	GFX_BG1CNT = BG_32x32 | BG_MAP_BASE(0) | BG_COLOR_16 | BG_TILE_BASE(3) | BG_PRIORITY(1);
 	REG_BG0CNT = GFX_BG0CNT;
 //	REG_BG1CNT = GFX_BG1CNT;
+	// Background 2 for border
 	REG_BG2CNT = BG_32x32 | BG_MAP_BASE(2) | BG_COLOR_256 | BG_TILE_BASE(1) | BG_PRIORITY(2);
 
 	// Set up the sub display
