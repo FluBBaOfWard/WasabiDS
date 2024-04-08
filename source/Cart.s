@@ -94,8 +94,8 @@ loadCart: 					;@ Called from C
 	bl resetCartridgeBanks
 
 	ldrb r5,gMachine
-	cmp r5,#HW_SUPERVISION
-	moveq r4,#SOC_ASWAN
+	cmp r5,#HW_SV_TV_LINK
+	moveq r4,#SOC_KS5360_TV
 	movne r4,#SOC_KS5360
 	strb r4,gSOC
 
@@ -113,7 +113,6 @@ loadCart: 					;@ Called from C
 	bl cpuReset
 	ldmfd sp!,{r4-r11,lr}
 	bx lr
-
 
 ;@----------------------------------------------------------------------------
 clearDirtyTiles:

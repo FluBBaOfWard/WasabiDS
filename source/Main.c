@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
 	initSettings();
 	machineInit();
 	loadCart();
-	if ( initFileHelper() ) {
+	if (initFileHelper()) {
 		loadSettings();
 		loadBnWBIOS();
 		if (argc > 1) {

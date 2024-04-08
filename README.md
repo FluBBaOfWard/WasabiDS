@@ -1,4 +1,4 @@
-# WasabiDS V0.2.3
+# WasabiDS V0.2.4
 
 <img align="right" width="220" src="./logo.png" />
 
@@ -18,9 +18,10 @@ to select an option, B or the top of the screen to go back a step.
 
 To select between the tabs use R & L or the touchscreen.
 
-## Menu:
+## Menu
 
-### File:
+### File
+
 * Load Game: Select a game to load.
 * Load State: Load a previously saved state of the currently running game.
 * Save State: Save a state of the currently running game.
@@ -82,11 +83,11 @@ Huge thanks to Loopy for the incredible PocketNES, without it this emu would
 probably never have been made.
 Thanks to:
 	Peter Trauner & Kevin Horton for docs about the Supervision.
-	Osman Celimli for docs, tests & help about the Supervision. http://tailchao.com/Wataroo/
+	Osman Celimli for docs, tests & help about the Supervision. <http://tailchao.com/Wataroo/>
 ```
 
 Fredrik Ahlström
 
 Twitter @TheRealFluBBa
 
-http://www.github.com/FluBBaOfWard
+<http://www.github.com/FluBBaOfWard>

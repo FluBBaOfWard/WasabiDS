@@ -3,6 +3,44 @@
 ;*******************************************************************************
 ; A LONG TIME AGO IN AN EPOXY BLOB FAR, FAR AWAY... KS5360!
 ;
+;               64           41                     62        41
+;               ---------------                     ------------
+;           65 |               | 40             63 |            | 40
+;              |               |                   |            |
+;              |    WA-9101    |                   |   KS5360   |
+;              |               |                   |            |
+;           80 |o              | 25              2 |            | 21
+;               ---------------                     ------------
+;               1            24                     3         20
+;
+;                     QFP                             DIE PADS
+;
+;-------------------------------------------------------------------------------
+;  1 VBUS D5  (i/o) | 25 CBUS D0  (i/o) | 41 CBUS A1   (o)  | 65 VBUS A2   (o)
+;  2 VBUS D6  (i/o) | 26 CBUS B2   (o)  | 42 CBUS A0   (o)  | 66 VBUS A3   (o)
+;  3 VBUS D7  (i/o) | 27 CBUS B1   (o)  | 43 WRAM /CE  (o)  | 67 VBUS A4   (o)
+;  4 VRAM R/W  (o)  | 28 CBUS B0   (o)  | 44 WRAM R/W  (o)  | 68 VBUS A5   (o)
+;  5 /RIGHT    (i)  | 29 CBUS A13  (o)  | 45 /CARD     (o)  | 69 VBUS A6   (o)
+;  6 /LEFT     (i)  | 30 CBUS A12  (o)  | 46                | 70 VBUS A7   (o)
+;  7 /DOWN     (i)  | 31 CBUS A11  (o)  | 47 LINK D0  (i/o) | 71 VBUS A8   (o)
+;  8 /UP       (i)  | 32 CBUS A10  (o)  | 48 LINK D1  (i/o) | 72 VBUS A9   (o)
+;  9 /B        (i)  | 33 CBUS A9   (o)  | 49 LINK D2  (i/o) | 73 VBUS A10  (o)
+; 10 /A        (i)  | 34 CBUS A8   (o)  | 50 LINK D3  (i/o) | 74 VBUS A11  (o)
+; 11 /SELECT   (i)  | 35 CBUS A7   (o)  | 51 LCDC EN   (o)  | 75 VBUS A12  (o)
+; 12 /START    (i)  | 36 CBUS A6   (o)  | 52 LCDC PO   (o)  | 76 VBUS D0  (i/o)
+; 13 VCC            | 37 CBUS A5   (o)  | 53 LCDC FL   (o)  | 77 VBUS D1  (i/o)
+; 14 AUDIO L   (o)  | 38 CBUS A4   (o)  | 54 LCDC LL   (o)  | 78 VBUS D2  (i/o)
+; 15 AUDIO R   (o)  | 39 CBUS A3   (o)  | 55 LCDC PC   (o)  | 79 VBUS D3  (i/o)
+; 16 GND            | 40 CBUS A2   (o)  | 56 LCDC D3   (o)  | 80 VBUS D4  (i/o)
+; 17 /RESET    (i)  |                   | 57 LCDC D2   (o)  |
+; 18 CBUS D7  (i/o) |                   | 58 LCDC D1   (o)  |
+; 19 CBUS D6  (i/o) |                   | 59 LCDC D0   (o)  |
+; 20 CBUS D5  (i/o) |                   | 60 XTAL           |
+; 21 CBUS D4  (i/o) |                   | 61 XTAL           |
+; 22 CBUS D3  (i/o) |                   | 62 GND            |
+; 23 CBUS D2  (i/o) |                   | 63 VBUS A0   (o)  |
+; 24 CBUS D1  (i/o) |                   | 64 VBUS A1   (o)  |
+;-------------------------------------------------------------------------------
 ; Everything is driven by a 4MHz crystal (or ceramic resonator) and any values
 ; given below in 'clocks' or 'ticks' are at this rate.
 ;
@@ -137,6 +175,8 @@
 .define VRAM_SIZE		$2000
 .define VRAM_TOP		(VRAM_BASE + VRAM_SIZE)
 
+.define CARTRIDGE		$8000
+
 .define CART_SWAP		$8000
 .define CART_SWAP_BASE		$8000
 .define CART_SWAP_SIZE		$4000
@@ -216,15 +256,13 @@
 ; and raises an interrupt - no autoreload or wrapping. The counter is clocked
 ; by a /256 or /16384 prescaler selected through SYS_CONFIG,4.
 ;
-;
-; The prescaler is a free running counter which increments every tick. There is
+; The prescaler is a free running counter which increments every tick. There's
 ; no way to reset it so all timer durations are between N and N - 1 unless you
 ; manually synchronize by polling until a decrement occurs.
 ;
 ; Either Bit 7 (/256) or Bit 13 (/16384) from the prescaler is used as a clock
 ; for the timer's operations. It'll decrement on every rising edge and evaluate
 ; whether it needs to raise an interrupt while low.
-;
 ;
 ; This implementation causes a few interesting quirks...
 ;
@@ -234,7 +272,7 @@
 ;   setting causes a rising edge to occur.
 ;
 ; - Writing zeroes to TIM_COUNT will cause an interrupt to fire within half
-;   of a prescaler period - depending upon when the write occurred...
+;   of a prescaler period depending upon when the write occurred...
 ;   \- Prescaler tap is '1' -> interrupt deferred until tap output is '0'.
 ;    - Prescaler tap is '0' -> interrupt fires immediately.
 ;
@@ -297,24 +335,22 @@
 ; 9205 (Bendable) - COMM Port (see pinout below)
 ; .... (Magnum)   - Cartridge Slot (L0 - L3)
 ;
+;                                  .---------- DATA,0
+;                                  | .-------- DATA,1
+;                                  | | .------ DATA,2
+;                                  | | | .---- DATA,3
+;                                  | | | |
 ;
-;   .---------- LINK_DATA,0
-;   | .-------- LINK_DATA,1
-;   | | .------ LINK_DATA,2
-;   | | | .---- LINK_DATA,3
-;   | | | |
+;                                  1 2 3 4 5
+;                                -------------
+;                                \ o o o o o /
+;                                 \ o o o o /
+;                                  ---------
+;                                   6 7 8 9
 ;
-;   1 2 3 4 5
-; -------------
-; \ o o o o o /
-;  \ o o o o /
-;   ---------
-;    6 7 8 9
-;
-;    |   |
-;    |   `----- VCC (+5V)
-;    |
-;    `--------- GND
+;                                   |   |
+;                                   |   `----- VCC (+5V)
+;                                   `--------- GND
 ;
 
 .define LINK_DATA		$2021
@@ -339,11 +375,11 @@
 ; Can ONLY perform data transfers between the CPU and LCD VRAM (CBUS <-> VBUS)
 ; but is fairly quick about it - will transfer data at one of two speeds...
 ;
-; - If the LCD Driver is [ON]
+; - If the LCD is [ENABLED]
 ;   Five bytes are copied every six clocks with the last clock left open for
 ;   the display controller to read from VRAM (3.33MB/s).
 ;
-; - If the LCD Driver is [OFF]
+; - If the LCD is [DISABLED]
 ;   One byte is copied every clock (4.0MB/s).
 ;
 ; Both DMA_CBUS and DMA_VBUS are incremented during a transfer while DMA_LEN is
@@ -375,7 +411,11 @@
 ; 15 : ???
 ; 14 : Transfer Type (0 == VBUS -> CBUS, 1 == CBUS -> VBUS)
 ; 13 : ???
-; 12 - 0 : VBUS (Video) Address
+; 12 - 0 : VBUS Address
+;
+; Transfer Type is also determined by Bit 15 of DMA_CBUS, where any address
+; above $7FFF yields a CBUS -> VBUS transfer. This prevents data from being
+; written to the cartridge.
 ;
 ; The VBUS Address cursor will wrap within the bounds of VRAM - for example
 ; a 4KB transfer from CBUS $C000 -> VBUS $1800 will write the first half of
@@ -401,8 +441,8 @@
 ; in DMA_CBUS, DMA_VBUS, and DMA_LEN.
 ;
 ; The only software to use the DMA Controller is "Journey to the West" - which
-; always writes $80,$00 here in that order. While only the leading $80 seems to
-; be necessary it is probably best to follow this convention.
+; always writes $80,$00 here in that order. While only the leading $80 appears
+; to be necessary, it is probably best to follow this convention.
 
 
 
@@ -774,21 +814,19 @@
 ; is output first and then %BBBB. No volume control is supported but the stream
 ; can be played through either or both speakers (i.e. 'dual mono').
 ;
-; Sample data may be pulled from anywhere on the CBUS's address space - but the
+; Sample data may be pulled from anywhere on the CBUS's address space but the
 ; region in ($8000 - $BFFF) has a special feature where APU_ADMA_CONFIG,6-4 are
 ; used as an alternate 16KB Page Selection (so they're driven on B2 - B0).
-;
 ;
 ; During playback APU_ADMA_SRC increments after every fetch while APU_ADMA_LEN
 ; will decrement after each segment (16 Bytes). Modifying the latter during an
 ; active stream will overwrite the number of remaining data segments.
 ;
 ; The stream terminates once APU_ADMA_LEN reaches zero - upon which output is
-; silenced and the Audio DMA Complete interrupt fired (if enabled).
-;
-; Kicking off a subsequent playback request without modifying APU_ADMA_SRC or
-; APU_ADMA_LEN will perform a 4096 Byte (8192 Sample - maximum length) stream
-; with fetches continuing from where the previous stream left off.
+; silenced and the Audio DMA Complete interrupt fired (if enabled). Kicking off
+; a subsequent playback request without modifying APU_ADMA_SRC or APU_ADMA_LEN
+; will perform a 4096 Byte (8192 Sample - maximum length) stream with fetches
+; continuing from where the previous stream left off.
 ;
 
 .define APU_ADMA_SRC		$2018
@@ -799,8 +837,7 @@
 ; PCM Data Address.
 ;
 ; Attempting to use VRAM ($4000 - $5FFF, on VBUS) as a streaming source will
-; cause all fetched sample data to be zeroes (silent) - or it does sometimes
-; on certain hardware... uh... basically no it doesn't work and don't do it.
+; cause all fetched sample data to be either zeroes (silence) or garbage.
 
 
 .define APU_ADMA_LEN		$201A
@@ -850,9 +887,17 @@
 ; in APU_ADMA_CONFIG, APU_ADMA_SRC, and APU_ADMA_LEN. Once the ADMA is complete
 ; SYS_STATUS,1 will raise along with its pertinent interrupt (if enabled).
 ;
-; Clearing this register during an active ADMA immediately aborts its playback
-; without raising the Audio DMA Complete interrupt - i.e. writing $80,$00 in
-; that order will start and then cease streaming sample data.
+; Clearing this register during an active ADMA will halt its playback without
+; raising SYS_STATUS,1 - i.e. writing $80,$00 in that order will start and then
+; stop the stream. No other aspects of the ADMA stream are affected by this and
+; playback may be resumed with another "start" write.
+;
+; It also seems to leave the end of stream detection enabled - as performing...
+;
+; STZ APU_ADMA_REQ
+; STZ APU_ADMA_LEN
+;
+; ...during an active ADMA will raise SYS_STATUS,1.
 
 
 .define APU_ADMA_ACK		$2025
