@@ -82,12 +82,12 @@ All games should "work".
 Huge thanks to Loopy for the incredible PocketNES, without it this emu would
 probably never have been made.
 Thanks to:
-	Peter Trauner & Kevin Horton for docs about the Supervision.
-	Osman Celimli for docs, tests & help about the Supervision. <http://tailchao.com/Wataroo/>
+Peter Trauner & Kevin Horton for docs about the Supervision.
+Osman Celimli for docs, tests & help about the Supervision. <http://tailchao.com/Wataroo/>
 ```
 
 Fredrik Ahlström
 
-Twitter @TheRealFluBBa
+X/Twitter @TheRealFluBBa
 
-<http://www.github.com/FluBBaOfWard>
+<https://www.github.com/FluBBaOfWard>
