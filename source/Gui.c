@@ -13,7 +13,7 @@
 #include "ARM6502/Version.h"
 #include "KS5360/Version.h"
 
-#define EMUVERSION "V0.2.4 2024-07-29"
+#define EMUVERSION "V0.2.4 2024-09-11"
 
 #define ALLOW_SPEED_HACKS	(1<<17)
 #define ENABLE_HEADPHONES	(1<<18)
@@ -28,22 +28,41 @@ static void setupWSVBackground(void);
 static void uiMachine(void);
 static void uiDebug(void);
 
-const fptr fnMain[] = {nullUI, subUI, subUI, subUI, subUI, subUI, subUI, subUI, subUI, subUI};
+const MItem fnList0[] = {{"",uiDummy}};
+const MItem fnList1[] = {
+	{"Load Game",selectGame},
+	{"Load State",loadState},
+	{"Save State",saveState},
+	{"Save Settings",saveSettings},
+	{"Eject Game",ejectGame},
+	{"Reset Console",resetGame},
+	{"Quit Emulator",ui9}};
+const MItem fnList2[] = {
+	{"Controller",ui4},
+	{"Display",ui5},
+	{"Machine",ui6},
+	{"Settings",ui7},
+	{"Debug",ui8}};
+const MItem fnList4[] = {{"",autoBSet}, {"",autoASet}, {"",swapABSet}};
+const MItem fnList5[] = {{"",gammaSet}, {"",contrastSet}, {"",paletteChange}};
+const MItem fnList6[] = {{"",machineSet}};
+const MItem fnList7[] = {{"",speedSet}, {"",refreshChgSet}, {"",autoStateSet}, {"",autoSettingsSet}, {"",autoPauseGameSet}, {"",powerSaveSet}, {"",screenSwapSet}, {"",sleepSet}};
+const MItem fnList8[] = {{"",debugTextSet}, {"",stepFrame}};
+const MItem fnList9[] = {{"Yes ",exitEmulator}, {"No ",backOutOfMenu}};
 
-const fptr fnList0[] = {uiDummy};
-const fptr fnList1[] = {selectGame, loadState, saveState, saveSettings, ejectGame, resetGame, ui9};
-const fptr fnList2[] = {ui4, ui5, ui6, ui7, ui8};
-const fptr fnList3[] = {uiDummy};
-const fptr fnList4[] = {autoBSet, autoASet, swapABSet};
-const fptr fnList5[] = {gammaSet, contrastSet, paletteChange};
-const fptr fnList6[] = {machineSet};
-const fptr fnList7[] = {speedSet, refreshChgSet, autoStateSet, autoSettingsSet, autoPauseGameSet, powerSaveSet, screenSwapSet, sleepSet};
-const fptr fnList8[] = {debugTextSet, stepFrame};
-const fptr fnList9[] = {exitEmulator, backOutOfMenu};
-const fptr fnList10[] = {uiDummy};
-const fptr *const fnListX[] = {fnList0, fnList1, fnList2, fnList3, fnList4, fnList5, fnList6, fnList7, fnList8, fnList9, fnList10};
-u8 menuXItems[] = {ARRSIZE(fnList0), ARRSIZE(fnList1), ARRSIZE(fnList2), ARRSIZE(fnList3), ARRSIZE(fnList4), ARRSIZE(fnList5), ARRSIZE(fnList6), ARRSIZE(fnList7), ARRSIZE(fnList8), ARRSIZE(fnList9), ARRSIZE(fnList10)};
-const fptr drawUIX[] = {uiNullNormal, uiFile, uiOptions, uiAbout, uiController, uiDisplay, uiMachine, uiSettings, uiDebug, uiDummy, uiDummy};
+const Menu menu0 = MENU_M("", uiNullNormal, fnList0);
+Menu menu1 = MENU_M("", uiAuto, fnList1);
+const Menu menu2 = MENU_M("", uiAuto, fnList2);
+const Menu menu3 = MENU_M("", uiAbout, fnList0);
+const Menu menu4 = MENU_M("Controller Settings", uiController, fnList4);
+const Menu menu5 = MENU_M("Display Settings", uiDisplay, fnList5);
+const Menu menu6 = MENU_M("Machine Settings", uiMachine, fnList6);
+const Menu menu7 = MENU_M("Settings", uiSettings, fnList7);
+const Menu menu8 = MENU_M("Debug", uiDebug, fnList8);
+const Menu menu9 = MENU_M("Quit Emulator?", uiAuto, fnList9);
+const Menu menu10 = MENU_M("", uiDummy, fnList0);
+
+const Menu *const menus[] = {&menu0, &menu1, &menu2, &menu3, &menu4, &menu5, &menu6, &menu7, &menu8, &menu9, &menu10 };
 
 u8 gGammaValue = 0;
 u8 gContrastValue = 1;
@@ -65,7 +84,7 @@ const char *const langTxt[]  = {"Japanese", "English"};
 void setupGUI() {
 	emuSettings = AUTOPAUSE_EMULATION | AUTOSLEEP_OFF;
 	keysSetRepeat(25, 4);	// delay, repeat.
-	menuXItems[1] = ARRSIZE(fnList1) - (enableExit?0:1);
+	menu1.itemCount = ARRSIZE(fnList1) - (enableExit?0:1);
 	openMenu();
 }
 
@@ -89,28 +108,6 @@ void uiNullNormal() {
 	drawItem("Menu",27,1,0);
 }
 
-void uiFile() {
-	setupMenu();
-	drawMenuItem("Load Game");
-	drawMenuItem("Load State");
-	drawMenuItem("Save State");
-	drawMenuItem("Save Settings");
-	drawMenuItem("Eject Game");
-	drawMenuItem("Reset Console");
-	if (enableExit) {
-		drawMenuItem("Quit Emulator");
-	}
-}
-
-void uiOptions() {
-	setupMenu();
-	drawMenuItem("Controller");
-	drawMenuItem("Display");
-	drawMenuItem("Machine");
-	drawMenuItem("Settings");
-	drawMenuItem("Debug");
-}
-
 void uiAbout() {
 	cls(1);
 	drawTabs();
@@ -125,26 +122,26 @@ void uiAbout() {
 }
 
 void uiController() {
-	setupSubMenu("Controller Settings");
+	setupSubMenuText();
 	drawSubItem("B Autofire:", autoTxt[autoB]);
 	drawSubItem("A Autofire:", autoTxt[autoA]);
 	drawSubItem("Swap A-B:  ", autoTxt[(joyCfg>>10)&1]);
 }
 
 void uiDisplay() {
-	setupSubMenu("Display Settings");
+	setupSubMenuText();
 	drawSubItem("Gamma:", brighTxt[gGammaValue]);
 	drawSubItem("Contrast:", brighTxt[gContrastValue]);
 	drawSubItem("Palette:", palTxt[gPaletteBank]);
 }
 
 static void uiMachine() {
-	setupSubMenu("Machine Settings");
+	setupSubMenuText();
 	drawSubItem("Machine:", machTxt[gMachineSet]);
 }
 
 void uiSettings() {
-	setupSubMenu("Settings");
+	setupSubMenuText();
 	drawSubItem("Speed:", speedTxt[(emuSettings>>6)&3]);
 	drawSubItem("Allow Refresh Change:", autoTxt[(emuSettings&ALLOW_REFRESH_CHG)>>19]);
 	drawSubItem("Autoload State:", autoTxt[(emuSettings>>2)&1]);
@@ -156,7 +153,7 @@ void uiSettings() {
 }
 
 void uiDebug() {
-	setupSubMenu("Debug");
+	setupSubMenuText();
 	drawSubItem("Debug Output:", autoTxt[gDebugSet&1]);
 	drawSubItem("Step Frame", NULL);
 }

@@ -91,7 +91,7 @@ void saveSettings() {
 
 void loadNVRAM() {
 	FILE *svsFile;
-	char nvramName[FILENAMEMAXLENGTH];
+	char nvramName[FILENAME_MAX_LENGTH];
 	int saveSize = 0;
 	void *nvMem = NULL;
 
@@ -121,7 +121,7 @@ void loadNVRAM() {
 
 void saveNVRAM() {
 	FILE *svsFile;
-	char nvramName[FILENAMEMAXLENGTH];
+	char nvramName[FILENAME_MAX_LENGTH];
 	int saveSize = 0;
 	void *nvMem = NULL;
 
@@ -210,7 +210,7 @@ void ejectCart() {
 
 //---------------------------------------------------------------------------------
 static int loadBIOS(void *dest, const char *fPath, const int maxSize) {
-	char tempString[FILEPATHMAXLENGTH];
+	char tempString[FILEPATH_MAX_LENGTH];
 	char *sPtr;
 
 	cls(0);
@@ -236,9 +236,9 @@ static bool selectBios(char *dest, const char *fileTypes) {
 	const char *biosName = browseForFileType(fileTypes);
 
 	if (biosName) {
-		strlcpy(dest, currentDir, FILEPATHMAXLENGTH);
-		strlcat(dest, "/", FILEPATHMAXLENGTH);
-		strlcat(dest, biosName, FILEPATHMAXLENGTH);
+		strlcpy(dest, currentDir, FILEPATH_MAX_LENGTH);
+		strlcat(dest, "/", FILEPATH_MAX_LENGTH);
+		strlcat(dest, biosName, FILEPATH_MAX_LENGTH);
 		return true;
 	}
 	return false;
