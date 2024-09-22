@@ -45,13 +45,6 @@ runStart:
 	and r3,r3,r0
 	str r0,joyClick
 
-//	tst r3,#0x04				;@ NDS Select?
-//	tsteq r3,#0x800				;@ NDS Y?
-//	ldrne r2,=systemMemory+0xB3
-//	ldrbne r2,[r2]
-//	tstne r2,#4					;@ Power button NMI enabled?
-//	and r0,r3,#0x04				;@ NDS Select?
-
 	bl refreshEMUjoypads
 
 	ldr m6502ptr,=m6502_0

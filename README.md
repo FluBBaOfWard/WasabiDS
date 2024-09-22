@@ -1,4 +1,4 @@
-# WasabiDS V0.2.4
+# WasabiDS V0.2.5
 
 <img align="right" width="220" src="./logo.png" />
 
@@ -38,6 +38,7 @@ To select between the tabs use R & L or the touchscreen.
   * Gamma: Lets you change the gamma ("brightness").
   * Contrast: Change palette contrast.
   * Palette: Here you can select between different palettes.
+  * Border: What to show outside the SV screen.
 * Machine Settings:
   * Machine: Select the emulated machine.
 * Settings:
