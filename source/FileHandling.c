@@ -58,6 +58,7 @@ int loadSettings() {
 	sleepTime      = cfg.sleepTime;
 	joyCfg         = (joyCfg & ~0x400)|((cfg.controller & 1)<<10);
 	strlcpy(currentDir, cfg.currentPath, sizeof(currentDir));
+	pauseEmulation = emuSettings & AUTOPAUSE_EMULATION;
 
 	infoOutput("Settings loaded.");
 	return 0;
@@ -173,6 +174,7 @@ bool loadGame(const char *gameName) {
 			if (emuSettings & AUTOLOAD_STATE) {
 				loadState();
 			}
+			powerIsOn = true;
 			closeMenu();
 			return false;
 		}

@@ -39,7 +39,7 @@ int getStateSize() {
 	return size;
 }
 
-static void setupBorderPalette(const void *palette, int len) {
+static void setupBorderPalette(const unsigned short *palette, int len) {
 	vramSetBankF(VRAM_F_LCD);
 	if (gBorderEnable == 0) {
 		memset(VRAM_F, 0, len);
@@ -60,11 +60,8 @@ void setupSVBorderPalette() {
 }
 
 void setupTVBackground() {
-	vramSetBankF(VRAM_F_LCD);
 	decompress(TVLinkTiles, BG_TILE_RAM(1), LZ77Vram);
 	decompress(TVLinkMap, BG_MAP_RAM(2), LZ77Vram);
-	memcpy(VRAM_F, TVLinkPal, TVLinkPalLen);
-	vramSetBankF(VRAM_F_BG_EXT_PALETTE_SLOT23);
 }
 
 void setupTVBorderPalette() {
@@ -78,6 +75,7 @@ void setupEmuBackground() {
 	}
 	else {
 		setupTVBackground();
+		setupTVBorderPalette();
 	}
 }
 

@@ -164,6 +164,8 @@ void ejectGame() {
 void resetGame() {
 	checkMachine();
 	loadCart();
+	setupEmuBackground();
+	powerIsOn = true;
 }
 
 //---------------------------------------------------------------------------------

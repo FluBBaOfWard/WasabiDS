@@ -22,9 +22,9 @@ void vblIrqHandler(void);
 void monoPalInit(void);
 void paletteInit(u8 gammaVal);
 void updateLCDRefresh(void);
-void refreshGfx(void);
-u8 wsvReadIO(u16 adr);
-void wsvWriteIO(u16 adr, u8 value);
+void gfxRefresh(void);
+u8 svReadIO(u16 adr);
+void svWriteIO(u16 adr, u8 value);
 
 #ifdef __cplusplus
 } // extern "C"
