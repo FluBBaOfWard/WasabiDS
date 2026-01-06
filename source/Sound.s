@@ -26,10 +26,9 @@ soundInit:
 //	bx lr
 
 ;@----------------------------------------------------------------------------
-soundReset:
+soundReset:				;@ svvptr,=ks5360_0
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{lr}
-	ldr svvptr,=ks5360_0
 	bl svAudioReset			;@ sound
 	ldmfd sp!,{lr}
 	bx lr
@@ -49,10 +48,10 @@ VblSound2:					;@ r0=length, r1=pointer
 	cmp r2,#0
 	bne silenceMix
 
-	stmfd sp!,{r0,lr}
+	stmfd sp!,{r0,svvptr,lr}
 	ldr svvptr,=ks5360_0
 	bl svAudioMixer
-	ldmfd sp!,{r0,lr}
+	ldmfd sp!,{r0,svvptr,lr}
 	bx lr
 
 silenceMix:
@@ -76,7 +75,11 @@ muteSoundChip:
 	.byte 0
 	.space 2
 
+#ifdef GBA
+	.section .sbss				;@ This is EWRAM on GBA with devkitARM
+#else
 	.section .bss
+#endif
 	.align 2
 //WAVBUFFER:
 //	.space 0x1000

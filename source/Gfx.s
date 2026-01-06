@@ -12,19 +12,17 @@
 	.global GFX_BG1CNT
 	.global EMUPALBUFF
 	.global frameTotal
-	.global ks5360_0
 
 	.global gfxInit
 	.global gfxReset
 	.global monoPalInit
 	.global paletteInit
-	.global gfxRefresh
 	.global gfxEndFrame
 	.global vblIrqHandler
-	.global svReadIO
-	.global svWriteIO
 	.global updateLCDRefresh
 	.global setScreenRefresh
+	.global gfxRefresh
+	.global lowRefresh
 
 
 	.syntax unified
@@ -41,6 +39,9 @@ gfxInit:					;@ Called from machineInit
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{lr}
 
+	ldr r0,=m6502SetNMIPin
+	ldr r1,=m6502SetIRQPin
+	ldr r2,=svVRAM
 	bl svVideoInit
 	bl gfxWinInit
 
@@ -57,19 +58,14 @@ gfxReset:					;@ Called with CPU reset
 
 	bl gfxWinInit
 
-	ldr r0,=m6502SetNMIPin
-	ldr r1,=m6502SetIRQPin
-	ldr r2,=svVRAM
-	ldr r3,=gSOC
-	ldrb r3,[r3]
-	bl svVideoReset0
+	ldr r0,=gSOC
+	ldrb r0,[r0]
+	bl svVideoReset
 	bl monoPalInit
 
 	ldr r0,=gGammaValue
 	ldrb r0,[r0]
 	bl paletteInit				;@ Do palette mapping
-
-	ldr svvptr,=ks5360_0
 
 	ldmfd sp!,{pc}
 
@@ -221,49 +217,50 @@ lightConvert:	;@ Takes values in r0 & r1(0-0xFF), light in r2(0-0xFF)
 updateLCDRefresh:
 	.type updateLCDRefresh STT_FUNC
 ;@----------------------------------------------------------------------------
-	adr svvptr,ks5360_0
+	stmfd sp!,{svvptr,lr}
+	ldr svvptr,=ks5360_0
 	ldrb r1,[svvptr,#svvLCDVSize]
-	b svRefW
+	bl svRefW
+	ldmfd sp!,{svvptr,lr}
+	bx lr
 ;@----------------------------------------------------------------------------
-setScreenRefresh:			;@ r0 in = WS scan line count.
+setScreenRefresh:			;@ r0 in = SV scan line count.
 	.type setScreenRefresh STT_FUNC
 ;@----------------------------------------------------------------------------
-	stmfd sp!,{r4-r6,lr}
-	mov r4,r0
-	ldr r6,=8130				;@ SV scanline frequency = 8130Hz
-	mov r0,r6,lsl#1
-	mov r1,r4
+	stmfd sp!,{r4-r5,lr}
+	ldr r5,=246*2				;@ SV cycles per scanline
+	mul r1,r0,r5
+	ldr r0,=4000000*2			;@ SV main frequency = 4MHz
 	swi 0x090000				;@ Division r0/r1, r0=result, r1=remainder.
 	movs r0,r0,lsr#1
 	adc r0,r0,#0
-	mov r5,r0
-	bl setLCDFPS
+	mov r4,r0
+	bl setTargetFPS
 	ldr r0,=emuSettings
 	ldr r0,[r0]
 	ands r0,r0,#1<<19
 	moveq r0,#59
-	subne r0,r5,#1
+	subne r0,r4,#1
 	ldr r1,=fpsNominal
 	strb r0,[r1]
 
-	ldr r0,=15734				;@ DS scanline frequency = 15734.3Hz
-	mul r0,r4,r0				;@ DS scanline freq * WS scanlines
-	mov r1,r6					;@ / WS scanline freq = DS scanlines.
+	ldr r0,=263*60				;@ Total scanlines for 1s
+	mov r1,r4					;@ SV FPS.
 	swi 0x090000				;@ Division r0/r1, r0=result, r1=remainder.
 	ldr r1,=263
 	sub r0,r1,r0
 	cmp r0,#3
-	movmi r0,#0
+	movcc r0,#0
 	str r0,lcdSkip
 
-	ldmfd sp!,{r4-r6,lr}
+	ldmfd sp!,{r4-r5,lr}
 	bx lr
 
 ;@----------------------------------------------------------------------------
 vblIrqHandler:
 	.type vblIrqHandler STT_FUNC
 ;@----------------------------------------------------------------------------
-	stmfd sp!,{r4-r8,lr}
+	stmfd sp!,{r4-r8,svvptr,lr}
 	bl calculateFPS
 
 	mov r6,#REG_BASE
@@ -285,7 +282,7 @@ vblIrqHandler:
 	orr r4,r4,#0x100			;@ 256 words (1024 bytes)
 	stmia r1,{r2-r4}			;@ DMA3 go
 
-	adr svvptr,ks5360_0
+	ldr svvptr,=ks5360_0
 	ldr r0,GFX_BG0CNT
 	str r0,[r6,#REG_BG0CNT]
 	ldr r0,GFX_DISPCNT
@@ -311,24 +308,15 @@ vblIrqHandler:
 	ldr r0,=emuSettings
 	ldr r0,[r0]
 	ands r0,r0,#1<<19
-	beq exit75Hz
+	beq exitLowHz
 	ldr r0,=pauseEmulation
 	ldrb r0,[r0]
 	cmp r0,#0
-	bne exit75Hz
+	bne exitLowHz
 	ldr r0,lcdSkip
 	cmp r0,#0
-	beq exit75Hz
-hz75Start:
-hz75Loop:
-	ldrh r1,[r6,#REG_VCOUNT]
-	cmp r1,#202
-	bmi hz75Loop
-	add r1,r1,r0			;@ Skip 55(?) scan lines for 75Hz.
-	cmp r1,#260
-	movpl r1,#260
-	strh r1,[r6,#REG_VCOUNT]
-exit75Hz:
+	strbmi r0,doLowRefresh
+exitLowHz:
 
 	ldrb r0,frameDone
 	cmp r0,#0
@@ -340,14 +328,32 @@ exit75Hz:
 nothingNew:
 
 	blx scanKeys
-	ldmfd sp!,{r4-r8,pc}
+	ldmfd sp!,{r4-r8,svvptr,pc}
 
+;@----------------------------------------------------------------------------
+lowRefresh:
+;@----------------------------------------------------------------------------
+	ldrsb r0,doLowRefresh
+	cmp r0,#0
+	bxpl lr
+	adds r1,r0,#26
+	movpl r1,#0
+	strb r1,doLowRefresh
+	movmi r0,#-26
+
+	mov r2,#REG_BASE
+	ldrh r1,[r2,#REG_VCOUNT]
+	add r1,r1,r0
+	cmp r1,#202
+	movmi r1,#202
+	strh r1,[r2,#REG_VCOUNT]
+	bx lr
 
 ;@----------------------------------------------------------------------------
 gfxRefresh:					;@ Called from C when changing scaling.
 	.type gfxRefresh STT_FUNC
 ;@----------------------------------------------------------------------------
-	adr svvptr,ks5360_0
+	ldr svvptr,=ks5360_0		;@ fix !!!!
 ;@----------------------------------------------------------------------------
 gfxEndFrame:				;@ Called just before screen end (~line 159)	(r0-r3 safe to use)
 ;@----------------------------------------------------------------------------
@@ -390,37 +396,8 @@ gTwitch:		.byte 0
 
 gGfxMask:		.byte 0
 frameDone:		.byte 0
-				.byte 0,0
-;@----------------------------------------------------------------------------
-svVideoReset0:		;@ r0=NmiFunc, r1=IrqFunc, r2=ram+LUTs, r3=model
-;@----------------------------------------------------------------------------
-	adr svvptr,ks5360_0
-	b svVideoReset
-;@----------------------------------------------------------------------------
-svReadIO:
-	.type svReadIO STT_FUNC
-;@----------------------------------------------------------------------------
-	stmfd sp!,{r3,r12,lr}
-	mov r0,r12
-	adr svvptr,ks5360_0
-	bl svRead
-	ldmfd sp!,{r3,r12,lr}
-	bx lr
-;@----------------------------------------------------------------------------
-svWriteIO:
-	.type svWriteIO STT_FUNC
-;@----------------------------------------------------------------------------
-	stmfd sp!,{r3,r12,lr}
-	mov r1,r0
-	mov r0,r12
-	adr svvptr,ks5360_0
-	bl svWrite
-	ldmfd sp!,{r3,r12,lr}
-	bx lr
-;@----------------------------------------------------------------------------
-ks5360_0:
-	.space ks5360Size
-;@----------------------------------------------------------------------------
+doLowRefresh:	.byte 0
+				.byte 0
 
 gfxState:
 	.long 0
@@ -437,7 +414,7 @@ GFX_BG1CNT:
 	.short 0
 
 #ifdef GBA
-	.section .sbss				;@ For the GBA
+	.section .sbss				;@ This is EWRAM on GBA with devkitARM
 #else
 	.section .bss
 #endif

@@ -3,10 +3,9 @@
 #include "ARM6502/M6502.i"
 #include "KS5360/KS5360.i"
 
-#define CYCLE_PSL (246*2)
-
 	.global waitMaskIn
 	.global waitMaskOut
+	.global ks5360_0
 	.global m6502_0
 
 	.global run
@@ -54,7 +53,6 @@ svFrameLoop:
 ;@----------------------------------------------------------------------------
 	mov r0,#CYCLE_PSL
 	bl m6502RunXCycles
-	ldr svvptr,=ks5360_0
 	bl svDoScanline
 	cmp r0,#0
 	bne svFrameLoop
@@ -93,7 +91,6 @@ svStepLoop:
 ;@----------------------------------------------------------------------------
 	mov r0,#CYCLE_PSL
 	bl m6502RunXCycles
-	ldr svvptr,=ks5360_0
 	bl svDoScanline
 	cmp r0,#0
 	bne svStepLoop
@@ -127,16 +124,17 @@ cpuReset:					;@ Called by loadCart/resetGame
 	bx lr
 ;@----------------------------------------------------------------------------
 #ifdef NDS
-	.section .dtcm, "ax", %progbits			;@ For the NDS
+	.section .sbss				;@ This is DTCM on NDS with devkitARM
 #elif GBA
-	.section .iwram, "ax", %progbits		;@ For the GBA
+	.section .bss				;@ This is IWRAM on GBA with devkitARM
 #else
-	.section .text
+	.section .bss
 #endif
 	.align 2
 ;@----------------------------------------------------------------------------
 m6502_0:
-	.space m6502Size
+ks5360_0:
+	.space ks5360Size
 ;@----------------------------------------------------------------------------
 	.end
 #endif // #ifdef __arm__

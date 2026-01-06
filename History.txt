@@ -1,8 +1,13 @@
-Wasabi revision history
--=-=-=-=-=-=-=-=-=-=-=-
+WasabiDS revision history
+-=-=-=-=-=-=-=-=-=-=-=-=-
 
-V0.2.5 - 2024-09-22 (FluBBa)
+V0.2.5 - 2026-01-06 (FluBBa)
+	Fixed sound pitch of the two square waves.
+	Fixed amplitude of audio DMA channel.
+	Fixed noise calculation.
 	Fixed TVLink background.
+	Updated cpu core.
+	Broke savestates compatibility.
 
 V0.2.4 - 2024-07-29 (FluBBa)
 	Optimized cpu core.

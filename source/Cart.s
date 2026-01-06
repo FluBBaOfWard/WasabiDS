@@ -5,16 +5,6 @@
 #include "KS5360/KS5360.i"
 #include "ARM6502/M6502.i"
 
-	.global machineInit
-	.global loadCart
-	.global romNum
-	.global cartFlags
-	.global romStart
-	.global bankSwitchCart
-	.global reBankSwitchCart
-	.global BankSwitch89AB_W
-	.global clearDirtyTiles
-
 	.global romSpacePtr
 	.global MEMMAPTBL_
 
@@ -31,6 +21,16 @@
 	.global gSOC
 	.global gLang
 	.global gPaletteBank
+
+	.global machineInit
+	.global loadCart
+	.global romNum
+	.global cartFlags
+	.global romStart
+	.global bankSwitchCart
+	.global reBankSwitchCart
+	.global BankSwitch89AB_W
+	.global clearDirtyTiles
 
 	.syntax unified
 	.arm
@@ -49,6 +49,7 @@ ROM_Space:
 //	.incbin "roms/Journey to the West (US).sv"
 //	.incbin "roms/Juggler (1992) (Bon Treasure).sv"
 //	.incbin "roms/Kitchen War (1992) (Bon Treasure).sv"
+//	.incbin "roms/WaJuke.sv"
 //	.incbin "roms/WaTest.sv"
 ROM_SpaceEnd:
 #endif
@@ -59,14 +60,17 @@ machineInit: 				;@ Called from C
 	.type   machineInit STT_FUNC
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{r4-r11,lr}
-
+	ldr svvptr,=ks5360_0
 #ifdef EMBEDDED_ROM
 	ldr r0,=romSize
 	mov r1,#ROM_SpaceEnd-ROM_Space
 	str r1,[r0]
 	ldr r0,=romSpacePtr
-	ldr r7,=ROM_Space
-	str r7,[r0]
+	ldr r1,=ROM_Space
+	str r1,[r0]
+	ldr r0,=powerIsOn
+	mov r1,#1
+	strb r1,[r0]
 #endif
 
 	bl memoryMapInit
@@ -85,7 +89,7 @@ loadCart: 					;@ Called from C
 	.type   loadCart STT_FUNC
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{r4-r11,lr}
-	ldr m6502ptr,=m6502_0
+	ldr svvptr,=ks5360_0
 
 	ldr r0,romSize
 	movs r1,r0,lsr#14			;@ 16kB blocks.
@@ -112,9 +116,9 @@ loadCart: 					;@ Called from C
 	bl ioReset
 	bl soundReset
 	bl cpuReset
+
 	ldmfd sp!,{r4-r11,lr}
 	bx lr
-
 ;@----------------------------------------------------------------------------
 clearDirtyTiles:
 ;@----------------------------------------------------------------------------
@@ -134,7 +138,7 @@ memoryMapInit:
 
 	ldr r1,=ram6502R
 	str r1,[r0,#m6502ReadTbl+0*4]
-	ldr r1,=svReadIO
+	ldr r1,=svRead
 	str r1,[r0,#m6502ReadTbl+1*4]
 	ldr r1,=vram6502R
 	str r1,[r0,#m6502ReadTbl+2*4]
@@ -151,7 +155,7 @@ memoryMapInit:
 
 	ldr r1,=ram6502W
 	str r1,[r0,#m6502WriteTbl+0*4]
-	ldr r1,=svWriteIO
+	ldr r1,=svWrite
 	str r1,[r0,#m6502WriteTbl+1*4]
 	ldr r1,=vram6502W
 	str r1,[r0,#m6502WriteTbl+2*4]
@@ -262,7 +266,7 @@ bankPointers:
 	.space 32*4
 
 #ifdef GBA
-	.section .sbss				;@ For the GBA
+	.section .sbss				;@ This is EWRAM on GBA with devkitARM
 #else
 	.section .bss
 #endif
