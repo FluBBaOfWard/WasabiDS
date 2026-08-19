@@ -10,7 +10,7 @@
 #include "Gfx.h"
 #include "io.h"
 #include "cpu.h"
-#include "ARM6502/Version.h"
+#include "KS5360/ARM6502/Version.h"
 #include "KS5360/Version.h"
 
 #define EMUVERSION "V0.2.6 2026-08-19"

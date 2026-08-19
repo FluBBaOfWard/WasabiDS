@@ -1,7 +1,6 @@
 #ifdef __arm__
 
 #include "KS5360/KS5360.i"
-#include "ARM6502/M6502.i"
 
 //#define EMBEDDED_ROM
 

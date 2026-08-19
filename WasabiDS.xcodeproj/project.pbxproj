@@ -53,6 +53,7 @@
 		9C175C1528BE695A00293DA7 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		9C1A755428DCCF48005F342E /* TVLink.grit */ = {isa = PBXFileReference; lastKnownFileType = text; path = TVLink.grit; sourceTree = "<group>"; };
 		9C1A755528DCCF48005F342E /* TVLink.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = TVLink.png; sourceTree = "<group>"; };
+		9C2138B0303622B500808645 /* icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon.png; sourceTree = "<group>"; };
 		9C4EB1C4271CB16A0072D38E /* Supervision.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Supervision.c; sourceTree = "<group>"; };
 		9C4EB1C5271CB16A0072D38E /* Supervision.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Supervision.h; sourceTree = "<group>"; };
 		9C50820525D45A9A00A8E1BA /* Cart.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Cart.h; sourceTree = "<group>"; };
@@ -97,6 +98,7 @@
 				9C175BDC28B62EB800293DA7 /* WasabiDS_todo.txt */,
 				A4AA02141B04077F0043E4D4 /* History.txt */,
 				9CBC0C8E26DD7C2A0039D17E /* README.md */,
+				9C2138B0303622B500808645 /* icon.png */,
 				A42D0269205FEC6E00515C72 /* Docs */,
 				746D78E014ED9A6D00CC738F /* makefile */,
 				A48CC0251618E65200465E20 /* source */,
@@ -283,6 +285,8 @@
 		A45BB8CA1618FB840009569D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BLOCKSDS = /opt/wonderful/thirdparty/blocksds/core;
+				BLOCKSDSEXT = /opt/wonderful/thirdparty/blocksds/external;
 				DEVKITARM = $DEVKITPRO/devkitarm;
 				DEVKITPRO = /opt/devkitpro_old;
 				PRODUCT_NAME = WasabiDS;
@@ -292,6 +296,8 @@
 		A45BB8CB1618FB840009569D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BLOCKSDS = /opt/wonderful/thirdparty/blocksds/core;
+				BLOCKSDSEXT = /opt/wonderful/thirdparty/blocksds/external;
 				DEVKITARM = $DEVKITPRO/devkitarm;
 				DEVKITPRO = /opt/devkitpro;
 				PRODUCT_NAME = WasabiDS;

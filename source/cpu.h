@@ -5,7 +5,6 @@
 extern "C" {
 #endif
 
-#include "ARM6502/M6502.h"
 #include "KS5360/KS5360.h"
 
 extern M6502Core m6502_0;
