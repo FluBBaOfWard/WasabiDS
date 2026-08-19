@@ -10,11 +10,11 @@ extern "C" {
 
 #define FILEEXTENSIONS ".sv.bin"
 
-extern ConfigData cfg;
+//extern ConfigData cfg;
 
-int initSettings(void);
+void initSettings(void);
 int loadSettings(void);
-void saveSettings(void);
+int saveSettings(void);
 bool loadGame(const char *gameName);
 void checkMachine(void);
 void loadNVRAM(void);
@@ -30,4 +30,4 @@ int loadBnWBIOS(void);
 } // extern "C"
 #endif
 
-#endif // FILEHANDLING_HEADER
+#endif // !FILEHANDLING_HEADER

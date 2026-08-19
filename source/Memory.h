@@ -18,4 +18,4 @@ void dmaWriteMem20W(u32 addr, u16 value);
 } // extern "C"
 #endif
 
-#endif	// MEMORY_HEADER
+#endif // !MEMORY_HEADER

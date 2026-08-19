@@ -49,7 +49,7 @@ rom_W:						;@ Write ROM address (error)
 ;@----------------------------------------------------------------------------
 
 #ifdef NDS
-	.section .itcm						;@ For the NDS ARM9
+	.section .itcm, "ax", %progbits		;@ For the NDS ARM9
 #elif GBA
 	.section .iwram, "ax", %progbits	;@ For the GBA
 #endif
@@ -103,4 +103,4 @@ mem6502R7:					;@ Mem read ($E000-$FFFF)
 
 ;@----------------------------------------------------------------------------
 	.end
-#endif // #ifdef __arm__
+#endif // __arm__

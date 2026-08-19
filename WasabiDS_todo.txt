@@ -1,6 +1,7 @@
 WasabiDS Todo
 
 GFX:
+	Add Blitter support
 	See KS5360 todo.
 
 GUI:

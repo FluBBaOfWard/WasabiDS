@@ -23,4 +23,4 @@ void setupEmuBorderPalette(void);
 } // extern "C"
 #endif
 
-#endif // SUPERVISION_HEADER
+#endif // !SUPERVISION_HEADER

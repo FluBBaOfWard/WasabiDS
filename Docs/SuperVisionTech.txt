@@ -54,7 +54,13 @@ weird clipping (sssnake) on line start: if (offset>8160) offset=0
 
 0x2000 to 0x2003 mirrored at 0x2004..0x2007
 
-0x200D - ??? sensible to writes of 0xFF (R?/W)
+DMA
+0x2008 - CBUS_LO
+0x2009 - CBUS_HI
+0x200A - VBUS_LO
+0x200B - VBUS_HI
+0x200C - DMA_LEN
+0x200D - DMA_CTL
 
 0x200E - TV Link palette? 00 normal
  bit 0: palette on

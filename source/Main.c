@@ -68,20 +68,21 @@ int main(int argc, char **argv) {
 	irqSet(IRQ_VCOUNT, lowRefresh);
 	irqEnable(IRQ_VCOUNT);
 	setupGUI();
-	getInput();
 	initSettings();
+	getInput();
+	bool fsOk = initFileHelper();
 	machineInit();
-	loadCart();
-	if (initFileHelper()) {
+	if (fsOk) {
 		loadSettings();
 		loadBnWBIOS();
 		if (argc > 1) {
 			loadGame(argv[1]);
-			setMuteSoundGUI();
+			soundSetMuteGUI();
 		}
 		redrawUI();
 	}
 	else {
+		loadCart();
 		infoOutput("fatInitDefault() failure.");
 	}
 
@@ -223,7 +224,7 @@ static void setupStream(void) {
 	//----------------------------------------------------------------
 	myStream.sampling_rate	= sample_rate;				// sampling rate =
 	myStream.buffer_length	= buffer_size;				// buffer length =
-	myStream.callback		= VblSound2;				// set callback function
+	myStream.callback		= soundRender;				// set callback function
 	myStream.format			= MM_STREAM_16BIT_STEREO;	// format = stereo 16-bit
 	myStream.timer			= MM_TIMER0;				// use hardware timer 0
 	myStream.manual			= false;					// use manual filling

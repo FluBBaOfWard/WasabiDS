@@ -4,8 +4,8 @@
 
 	.global soundInit
 	.global soundReset
-	.global VblSound2
-	.global setMuteSoundGUI
+	.global soundRender
+	.global soundSetMuteGUI
 
 	.extern pauseEmulation
 
@@ -34,15 +34,15 @@ soundReset:				;@ svvptr,=ks5360_0
 	bx lr
 
 ;@----------------------------------------------------------------------------
-setMuteSoundGUI:
-	.type   setMuteSoundGUI STT_FUNC
+soundSetMuteGUI:
+	.type   soundSetMuteGUI STT_FUNC
 ;@----------------------------------------------------------------------------
 	ldr r1,=pauseEmulation		;@ Output silence when emulation paused.
 	ldrb r0,[r1]
 	strb r0,muteSoundGUI
 	bx lr
 ;@----------------------------------------------------------------------------
-VblSound2:					;@ r0=length, r1=pointer
+soundRender:					;@ r0=length, r1=pointer
 ;@----------------------------------------------------------------------------
 	ldr r2,muteSound
 	cmp r2,#0
@@ -85,4 +85,4 @@ muteSoundChip:
 //	.space 0x1000
 ;@----------------------------------------------------------------------------
 	.end
-#endif // #ifdef __arm__
+#endif // __arm__

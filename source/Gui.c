@@ -13,7 +13,7 @@
 #include "ARM6502/Version.h"
 #include "KS5360/Version.h"
 
-#define EMUVERSION "V0.2.5 2025-01-06"
+#define EMUVERSION "V0.2.6 2026-08-19"
 
 static void gammaChange(void);
 static void paletteChange(void);
@@ -35,20 +35,20 @@ const MItem dummyItems[] = {
 	{"", uiDummy}
 };
 const MItem fileItems[] = {
-	{"Load Game",selectGame},
-	{"Load State",loadState},
-	{"Save State",saveState},
-	{"Save Settings",saveSettings},
-	{"Eject Game",ejectGame},
-	{"Reset Console",resetGame},
-	{"Quit Emulator",ui9}
+	{"Load Game", selectGame},
+	{"Load State", loadState},
+	{"Save State", saveState},
+	{"Save Settings",(void (*)(void))saveSettings},
+	{"Eject Game", ejectGame},
+	{"Reset Console", resetGame},
+	{"Quit Emulator", ui9}
 };
 const MItem optionItems[] = {
-	{"Controller",ui4},
-	{"Display",ui5},
-	{"Machine",ui6},
-	{"Settings",ui7},
-	{"Debug",ui8}
+	{"Controller", ui4},
+	{"Display", ui5},
+	{"Machine", ui6},
+	{"Settings", ui7},
+	{"Debug", ui8}
 };
 const MItem ctrlItems[] = {
 	{"B Autofire:", autoBSet, getAutoBText},
@@ -97,7 +97,7 @@ const Menu menu10 = MENU_M("", uiDummy, dummyItems);
 
 const Menu *const menus[] = {&menu0, &menu1, &menu2, &menu3, &menu4, &menu5, &menu6, &menu7, &menu8, &menu9, &menu10 };
 
-u8 gContrastValue = 1;
+u8 gContrastValue;
 u8 gBorderEnable = 1;
 
 static const char *const machTxt[]  = {"Auto", "Supervision", "Supervision TV-Link"};
@@ -106,7 +106,6 @@ static const char *const palTxt[]   = {"Green", "Black & White", "Red", "Blue", 
 
 /// This is called at the start of the emulator
 void setupGUI() {
-	emuSettings = AUTOPAUSE_EMULATION | AUTOSLEEP_OFF;
 	keysSetRepeat(25, 4);	// delay, repeat.
 	menu1.itemCount = ARRSIZE(fileItems) - (enableExit?0:1);
 	openMenu();

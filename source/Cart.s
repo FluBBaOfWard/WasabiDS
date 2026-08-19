@@ -1,9 +1,9 @@
 #ifdef __arm__
 
-//#define EMBEDDED_ROM
-
 #include "KS5360/KS5360.i"
 #include "ARM6502/M6502.i"
+
+//#define EMBEDDED_ROM
 
 	.global romSpacePtr
 	.global MEMMAPTBL_
@@ -49,11 +49,12 @@ ROM_Space:
 //	.incbin "roms/Journey to the West (US).sv"
 //	.incbin "roms/Juggler (1992) (Bon Treasure).sv"
 //	.incbin "roms/Kitchen War (1992) (Bon Treasure).sv"
+//	.incbin "roms/TV-Link (199x) (Watara).sv"
 //	.incbin "roms/WaJuke.sv"
 //	.incbin "roms/WaTest.sv"
 ROM_SpaceEnd:
-#endif
-	.section .ewram,"ax"
+#endif // EMBEDDED_ROM
+	.section .ewram, "ax", %progbits
 	.align 2
 ;@----------------------------------------------------------------------------
 machineInit: 				;@ Called from C
@@ -71,7 +72,7 @@ machineInit: 				;@ Called from C
 	ldr r0,=powerIsOn
 	mov r1,#1
 	strb r1,[r0]
-#endif
+#endif // EMBEDDED_ROM
 
 	bl memoryMapInit
 	bl gfxInit
@@ -82,7 +83,7 @@ machineInit: 				;@ Called from C
 	ldmfd sp!,{r4-r11,lr}
 	bx lr
 
-	.section .ewram,"ax"
+	.section .ewram, "ax", %progbits
 	.align 2
 ;@----------------------------------------------------------------------------
 loadCart: 					;@ Called from C
@@ -279,4 +280,4 @@ DIRTYTILES:
 	.space 0x200
 ;@----------------------------------------------------------------------------
 	.end
-#endif // #ifdef __arm__
+#endif // __arm__

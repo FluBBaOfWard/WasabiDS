@@ -21,73 +21,74 @@ static const char *const settingName = "settings.cfg";
 ConfigData cfg;
 
 //---------------------------------------------------------------------------------
-int initSettings() {
-	cfg.palette = 0;
-	cfg.gammaValue = 0;
-	cfg.emuSettings = AUTOPAUSE_EMULATION | AUTOLOAD_NVRAM;
-	cfg.sleepTime = 60*60*5;
-	cfg.controller = 0;					// Don't swap A/B
+void applyConfigData(void) {
+	emuSettings    = cfg.emuSettings & ~EMUSPEED_MASK; // Clear speed setting.
+	gPaletteBank   = cfg.palette;
+	gGammaValue    = cfg.gammaValue;
+	gContrastValue = cfg.contrastValue;
+	joyCfg         = (joyCfg & ~0x400) | ((cfg.controller & 1) << 10);
+	strlcpy(currentDir, cfg.currentPath, sizeof(currentDir));
+	pauseEmulation = emuSettings & AUTOPAUSE_EMULATION;
+}
 
-	return 0;
+void updateConfigData(void) {
+	strcpy(cfg.magic, "cfg");
+	cfg.emuSettings   = emuSettings & ~EMUSPEED_MASK; // Clear speed setting.
+	cfg.palette       = gPaletteBank;
+	cfg.gammaValue    = gGammaValue;
+	cfg.contrastValue = gContrastValue;
+	cfg.controller    = (joyCfg >> 10) & 1;
+	strlcpy(cfg.currentPath, currentDir, sizeof(cfg.currentPath));
+}
+
+void initSettings() {
+	memset(&cfg, 0, sizeof(cfg));
+	cfg.emuSettings   = AUTOPAUSE_EMULATION | AUTOSLEEP_OFF;
+	cfg.contrastValue = 1;
+
+	applyConfigData();
 }
 
 int loadSettings() {
 	FILE *file;
-
-	if (findFolder(folderName)) {
-		return 1;
-	}
-	if ( (file = fopen(settingName, "r")) ) {
-		fread(&cfg, 1, sizeof(ConfigData), file);
+	if (!findFolder(folderName)
+		&& (file = fopen(settingName, "r"))) {
+		int len = fread(&cfg, 1, sizeof(ConfigData), file);
 		fclose(file);
-		if (!strstr(cfg.magic,"cfg")) {
-			infoOutput("Error in settings file.");
-			return 1;
+		if (strstr(cfg.magic, "cfg") && len == sizeof(ConfigData)) {
+			applyConfigData();
+			infoOutput("Settings loaded.");
+			return 0;
 		}
+		updateConfigData();
+		infoOutput("Error in settings file.");
 	}
 	else {
 		infoOutput("Couldn't open file:");
 		infoOutput(settingName);
-		return 1;
 	}
-
-	gPaletteBank   = cfg.palette;
-	gGammaValue    = cfg.gammaValue;
-	gContrastValue = cfg.contrastValue;
-	emuSettings    = cfg.emuSettings & ~EMUSPEED_MASK;	// Clear speed setting.
-	sleepTime      = cfg.sleepTime;
-	joyCfg         = (joyCfg & ~0x400)|((cfg.controller & 1)<<10);
-	strlcpy(currentDir, cfg.currentPath, sizeof(currentDir));
-	pauseEmulation = emuSettings & AUTOPAUSE_EMULATION;
-
-	infoOutput("Settings loaded.");
-	return 0;
+	return 1;
 }
 
-void saveSettings() {
+int saveSettings() {
+	updateConfigData();
+
 	FILE *file;
-
-	strcpy(cfg.magic,"cfg");
-	cfg.palette       = gPaletteBank;
-	cfg.gammaValue    = gGammaValue;
-	cfg.contrastValue = gContrastValue;
-	cfg.emuSettings   = emuSettings & ~EMUSPEED_MASK;		// Clear speed setting.
-	cfg.sleepTime     = sleepTime;
-	cfg.controller    = (joyCfg>>10)&1;
-	strlcpy(cfg.currentPath, currentDir, sizeof(cfg.currentPath));
-
-	if (findFolder(folderName)) {
-		return;
-	}
-	if ( (file = fopen(settingName, "w")) ) {
-		fwrite(&cfg, 1, sizeof(ConfigData), file);
+	if (!findFolder(folderName)
+		&& (file = fopen(settingName, "w"))) {
+		int len = fwrite(&cfg, 1, sizeof(ConfigData), file);
 		fclose(file);
-		infoOutput("Settings saved.");
+		if (len == sizeof(ConfigData)) {
+			infoOutput("Settings saved.");
+			return 0;
+		}
+		infoOutput("Couldn't save settings.");
 	}
 	else {
 		infoOutput("Couldn't open file:");
 		infoOutput(settingName);
 	}
+	return 1;
 }
 
 void loadNVRAM() {
