@@ -17,7 +17,7 @@ extern u16 GFX_BG1CNT;
 void gfxInit(void);
 void vblIrqHandler(void);
 void monoPalInit(void);
-void paletteInit(u8 gammaVal);
+void paletteInit(u8 gammaVal, u8 contrastVal);
 void updateLCDRefresh(void);
 void gfxRefresh(void);
 void lowRefresh(void);

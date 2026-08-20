@@ -1,7 +1,8 @@
+WasabiDS.xcodeproj/xcuserdata
+WasabiDS.xcodeproj/project.xcworkspace/xcuserdata
 build
+compile_commands.json
 include/roms
 *.elf
 *.nds
 *.zip
-WasabiDS.xcodeproj/xcuserdata
-WasabiDS.xcodeproj/project.xcworkspace/xcuserdata

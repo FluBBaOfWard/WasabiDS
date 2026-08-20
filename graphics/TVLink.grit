@@ -9,3 +9,6 @@
 
 # standard 8bpp tilereduction
 -mR8
+
+# only use the first 32 colors
+-pn 32

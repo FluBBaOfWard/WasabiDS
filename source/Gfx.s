@@ -65,6 +65,12 @@ gfxReset:					;@ Called with CPU reset
 
 	ldr r0,=gGammaValue
 	ldrb r0,[r0]
+	ldr r1,=gContrastValue
+	ldrb r1,[r1]
+	ldr r2,=gSOC
+	ldrb r2,[r2]
+	cmp r2,#SOC_KS5360_TV
+	moveq r1,#4
 	bl paletteInit				;@ Do palette mapping
 
 	ldmfd sp!,{pc}
@@ -121,12 +127,11 @@ monoPalette:
 ;@----------------------------------------------------------------------------
 paletteInit:		;@ r0-r3 modified.
 	.type paletteInit STT_FUNC
-;@ Called by ui.c:  void paletteInit(gammaVal);
+;@ Called by ui.c:  void paletteInit(gammaVal, contrastVal);
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{r4-r9,lr}
 	mov r8,r0					;@ Gamma value = 0 -> 4
-	ldr r9,=gContrastValue
-	ldrb r9,[r9]
+	mov r9,r1					;@ Contrast value = 0 -> 4
 	ldr r6,=EMUPALBUFF
 	ldr r7,=MAPPED_RGB
 	mov r4,#4
