@@ -62,7 +62,6 @@ int main(int argc, char **argv) {
 	romSpacePtr = (u8 *)(((u32)memPtr + 0xFF) & ~0xFF);
 
 	setupGraphics();
-	setupStream();
 	irqSet(IRQ_VBLANK, myVblank);
 	SetYtrigger(230);
 	irqSet(IRQ_VCOUNT, lowRefresh);
@@ -85,6 +84,10 @@ int main(int argc, char **argv) {
 		loadCart();
 		infoOutput("fatInitDefault() failure.");
 	}
+
+	// Opening the stream can invoke soundRender immediately. The emulated
+	// sound state and sample address must be initialized before that happens.
+	setupStream();
 
 	while (1) {
 		waitVBlank();
